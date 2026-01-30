@@ -3,7 +3,7 @@ const http = require('http');
 const options = {
   hostname: 'localhost',
   port: process.env.PORT || 5000,
-  path: '/api/dashboard/data',
+  path: '/health',
   method: 'GET',
   timeout: 5000
 };

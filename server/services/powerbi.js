@@ -1,5 +1,4 @@
-// Power BI integration - for now, just return the embed URL
-// In a real implementation, this would handle authentication and token generation
+const logger = require('../utils/logger');
 
 function getPowerBIEmbedInfo(embedUrl) {
   try {
@@ -10,11 +9,11 @@ function getPowerBIEmbedInfo(embedUrl) {
     return {
       embedUrl: embedUrl,
       reportId: reportId,
-      // In production, you would generate access tokens here
-      accessToken: null // Placeholder
+      sourceUrl: embedUrl,
+      accessToken: null
     };
   } catch (error) {
-    console.error('Power BI URL parsing error:', error.message);
+    logger.error('Power BI URL parsing error', { service: 'powerbi', error: error.message });
     return null;
   }
 }

@@ -5,15 +5,14 @@ services:
     build: .
     ports:
       - "5000:5000"
+    env_file: .env
     environment:
       - NODE_ENV=production
-      - DEFAULT_ADMIN_PASSWORD=admin123
-      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
     volumes:
       - dashboard_data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/dashboard/data"]
+      test: ["CMD", "node", "healthcheck.js"]
       interval: 30s
       timeout: 10s
       retries: 3

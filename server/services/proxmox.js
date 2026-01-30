@@ -1,14 +1,17 @@
 const axios = require('axios');
 const https = require('https');
+const logger = require('../utils/logger');
 
 async function getProxmoxStatus(baseUrl, username, password, nodeNames = []) {
   try {
+    const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+
     // First, get authentication ticket
     const authResponse = await axios.post(`${baseUrl}/api2/json/access/ticket`, {
       username: username,
       password: password
     }, {
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }), // For self-signed certs
+      httpsAgent,
       timeout: 10000
     });
 
@@ -17,7 +20,7 @@ async function getProxmoxStatus(baseUrl, username, password, nodeNames = []) {
     // Set up authenticated axios instance
     const authAxios = axios.create({
       baseURL: baseUrl,
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      httpsAgent,
       timeout: 10000,
       headers: {
         'Cookie': `PVEAuthCookie=${ticket}`,
@@ -44,14 +47,14 @@ async function getProxmoxStatus(baseUrl, username, password, nodeNames = []) {
           link: `${baseUrl}#v1:0:=node%2F${nodeName}`
         });
       } catch (nodeError) {
-        console.error(`Error fetching ${nodeName}:`, nodeError.message);
+        logger.error(`Error fetching Proxmox node ${nodeName}`, { service: 'proxmox', node: nodeName, error: nodeError.message });
       }
     }
 
-    return results;
+    return { sourceUrl: baseUrl, items: results };
   } catch (error) {
-    console.error('Proxmox API error:', error.message);
-    return [];
+    logger.error('Proxmox API error', { service: 'proxmox', error: error.message });
+    return { sourceUrl: baseUrl, items: [] };
   }
 }
 
@@ -60,7 +63,7 @@ async function getAllNodes(authAxios) {
     const response = await authAxios.get('/api2/json/nodes');
     return response.data.data.map(node => node.node);
   } catch (error) {
-    console.error('Error getting nodes:', error.message);
+    logger.error('Error getting Proxmox nodes', { service: 'proxmox', error: error.message });
     return [];
   }
 }

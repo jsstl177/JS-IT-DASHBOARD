@@ -1,15 +1,17 @@
 import React from 'react';
 import { Card, CardContent, Typography, List, ListItem, ListItemText, Chip } from '@mui/material';
 
-function ProxmoxStatus({ data }) {
+function ProxmoxStatus({ data, sourceUrl }) {
   return (
     <Card className="proxmox-status-card">
       <CardContent>
         <Typography variant="h6" component="h2" gutterBottom>
           Proxmox Status
-          <a href="https://192.168.177.89:8006/#v1:0:=node%2Fproxmox1:4:5::::8::" target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', fontSize: '14px' }}>
-            🔗
-          </a>
+          {sourceUrl && (
+            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', fontSize: '14px' }}>
+              Open
+            </a>
+          )}
         </Typography>
         {data.length === 0 ? (
           <Typography variant="body2" color="textSecondary">

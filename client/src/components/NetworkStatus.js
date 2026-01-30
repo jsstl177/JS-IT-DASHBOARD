@@ -1,15 +1,17 @@
 import React from 'react';
 import { Card, CardContent, Typography, List, ListItem, ListItemText, Chip } from '@mui/material';
 
-function NetworkStatus({ data }) {
+function NetworkStatus({ data, sourceUrl }) {
   return (
     <Card className="network-status-card">
       <CardContent>
         <Typography variant="h6" component="h2" gutterBottom>
           Network Status
-          <a href="https://monitor.powerofjs.work/status/everything" target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', fontSize: '14px' }}>
-            🔗
-          </a>
+          {sourceUrl && (
+            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', fontSize: '14px' }}>
+              Open
+            </a>
+          )}
         </Typography>
         {data.length === 0 ? (
           <Typography variant="body2" color="textSecondary">

@@ -15,12 +15,34 @@ class Logger {
 
   formatMessage(level, message, meta = {}) {
     const timestamp = new Date().toISOString();
-    const metaString = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+
+    // Handle Error objects in meta
+    let processedMeta = meta;
+    if (meta instanceof Error) {
+      processedMeta = { message: meta.message, stack: meta.stack };
+    } else if (typeof meta === 'object' && meta !== null) {
+      // Process any Error values within the meta object
+      processedMeta = {};
+      for (const [key, value] of Object.entries(meta)) {
+        if (value instanceof Error) {
+          processedMeta[key] = { message: value.message, stack: value.stack };
+        } else {
+          processedMeta[key] = value;
+        }
+      }
+    }
+
+    const metaString = processedMeta && Object.keys(processedMeta).length ? ` ${JSON.stringify(processedMeta)}` : '';
     return `[${timestamp}] ${level.toUpperCase()}: ${message}${metaString}\n`;
   }
 
   writeToFile(message) {
-    fs.appendFileSync(this.logFile, message);
+    // Use async file writes to avoid blocking the event loop
+    fs.appendFile(this.logFile, message, (err) => {
+      if (err) {
+        console.error('Failed to write to log file:', err.message);
+      }
+    });
   }
 
   log(level, message, meta = {}) {

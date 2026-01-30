@@ -1,15 +1,17 @@
 import React from 'react';
 import { Card, CardContent, Typography, List, ListItem, ListItemText } from '@mui/material';
 
-function AutomationLogs({ data }) {
+function AutomationLogs({ data, sourceUrl }) {
   return (
     <Card className="automation-logs-card">
       <CardContent>
         <Typography variant="h6" component="h2" gutterBottom>
           Automation Log
-          <a href="http://192.168.177.92:5000" target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', fontSize: '14px' }}>
-            🔗
-          </a>
+          {sourceUrl && (
+            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', fontSize: '14px' }}>
+              Open
+            </a>
+          )}
         </Typography>
         {data.length === 0 ? (
           <Typography variant="body2" color="textSecondary">

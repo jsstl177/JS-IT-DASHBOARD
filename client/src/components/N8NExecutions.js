@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, Typography, List, ListItem, ListItemText, Chip } from '@mui/material';
 
-function N8NExecutions({ data }) {
+function N8NExecutions({ data, sourceUrl }) {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'success':
@@ -22,9 +22,11 @@ function N8NExecutions({ data }) {
       <CardContent>
         <Typography variant="h6" component="h2" gutterBottom>
           N8N Workflow History
-          <a href="http://192.168.177.233:5678" target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', fontSize: '14px' }}>
-            🔗
-          </a>
+          {sourceUrl && (
+            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', fontSize: '14px' }}>
+              Open
+            </a>
+          )}
         </Typography>
         {data.length === 0 ? (
           <Typography variant="body2" color="textSecondary">

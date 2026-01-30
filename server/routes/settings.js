@@ -1,12 +1,27 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('../db');
+const rateLimit = require('express-rate-limit');
 const { validateLogin, validateSettings, sanitizeInput } = require('../middleware/validation');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { encrypt, decrypt } = require('../utils/crypto');
+const { dbGet, dbAll, dbRun } = require('../utils/dbHelpers');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// Stricter rate limiter for login: 5 attempts per 15 minutes per IP
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many login attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Fields that should be encrypted at rest
+const SENSITIVE_FIELDS = ['api_key', 'api_secret', 'password'];
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
@@ -27,14 +42,15 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Login endpoint
-router.post('/login', validateLogin, asyncHandler(async (req, res) => {
+router.post('/login', loginLimiter, validateLogin, asyncHandler(async (req, res) => {
   const { username, password } = req.body;
 
   // Sanitize inputs
   const sanitizedUsername = sanitizeInput(username);
 
-  const user = await getUserByUsername(sanitizedUsername);
+  const user = await dbGet('SELECT * FROM users WHERE username = ?', [sanitizedUsername]);
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    logger.warn('Failed login attempt', { username: sanitizedUsername, ip: req.ip });
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
@@ -47,8 +63,18 @@ router.post('/login', validateLogin, asyncHandler(async (req, res) => {
 
 // Get all settings
 router.get('/', authenticateToken, asyncHandler(async (req, res) => {
-  const settings = await getAllSettings();
-  res.json(settings);
+  const settings = await dbAll(
+    'SELECT service, api_key, api_secret, base_url, username FROM settings'
+  );
+
+  // Decrypt sensitive fields before sending
+  const decryptedSettings = settings.map(setting => ({
+    ...setting,
+    api_key: decrypt(setting.api_key),
+    api_secret: decrypt(setting.api_secret),
+  }));
+
+  res.json(decryptedSettings);
 }));
 
 // Update or create setting
@@ -58,14 +84,27 @@ router.post('/', authenticateToken, validateSettings, asyncHandler(async (req, r
   // Sanitize inputs
   const sanitizedData = {
     service: sanitizeInput(service),
-    api_key: sanitizeInput(api_key),
-    api_secret: sanitizeInput(api_secret),
+    api_key: encrypt(sanitizeInput(api_key)),
+    api_secret: encrypt(sanitizeInput(api_secret)),
     base_url: sanitizeInput(base_url),
     username: sanitizeInput(username),
-    password: password // Don't sanitize password
+    password: encrypt(password) // Encrypt password at rest
   };
 
-  await upsertSetting(sanitizedData);
+  const query = `
+    INSERT OR REPLACE INTO settings (service, api_key, api_secret, base_url, username, password, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+  `;
+
+  await dbRun(query, [
+    sanitizedData.service,
+    sanitizedData.api_key,
+    sanitizedData.api_secret,
+    sanitizedData.base_url,
+    sanitizedData.username,
+    sanitizedData.password
+  ]);
+
   res.json({ message: 'Setting updated successfully' });
 }));
 
@@ -74,50 +113,8 @@ router.delete('/:service', authenticateToken, asyncHandler(async (req, res) => {
   const { service } = req.params;
   const sanitizedService = sanitizeInput(service);
 
-  await deleteSetting(sanitizedService);
+  await dbRun('DELETE FROM settings WHERE service = ?', [sanitizedService]);
   res.json({ message: 'Setting deleted successfully' });
 }));
-
-// Helper functions for database operations
-function getUserByUsername(username) {
-  return new Promise((resolve, reject) => {
-    db.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-}
-
-function getAllSettings() {
-  return new Promise((resolve, reject) => {
-    db.all('SELECT service, api_key, api_secret, base_url, username FROM settings', [], (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
-}
-
-function upsertSetting({ service, api_key, api_secret, base_url, username, password }) {
-  return new Promise((resolve, reject) => {
-    const query = `
-      INSERT OR REPLACE INTO settings (service, api_key, api_secret, base_url, username, password, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `;
-
-    db.run(query, [service, api_key, api_secret, base_url, username, password], function(err) {
-      if (err) reject(err);
-      else resolve(this.lastID);
-    });
-  });
-}
-
-function deleteSetting(service) {
-  return new Promise((resolve, reject) => {
-    db.run('DELETE FROM settings WHERE service = ?', [service], function(err) {
-      if (err) reject(err);
-      else resolve(this.changes);
-    });
-  });
-}
 
 module.exports = router;

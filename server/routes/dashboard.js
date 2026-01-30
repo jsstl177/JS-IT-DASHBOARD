@@ -1,5 +1,4 @@
 const express = require('express');
-const db = require('../db');
 const { getNetworkStatus } = require('../services/uptimeKuma');
 const { getOpenTickets } = require('../services/superOps');
 const { getAutomationLogs } = require('../services/automationLog');
@@ -7,6 +6,8 @@ const { getWorkflowExecutions } = require('../services/n8n');
 const { getProxmoxStatus } = require('../services/proxmox');
 const { getPowerBIEmbedInfo } = require('../services/powerbi');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { decrypt } = require('../utils/crypto');
+const { dbAll } = require('../utils/dbHelpers');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -17,15 +18,15 @@ router.get('/data', asyncHandler(async (req, res) => {
 
   const settings = await getSettingsFromDB();
 
-    const results = {
-      networkStatus: [],
-      openTickets: [],
-      automationLogs: [],
-      n8nExecutions: [],
-      proxmoxStatus: [],
-      powerbiInfo: null,
-      employeeSetup: []
-    };
+  const results = {
+    networkStatus: { sourceUrl: null, items: [] },
+    openTickets: { sourceUrl: null, items: [] },
+    automationLogs: { sourceUrl: null, items: [] },
+    n8nExecutions: { sourceUrl: null, items: [] },
+    proxmoxStatus: { sourceUrl: null, items: [] },
+    powerbiInfo: null,
+    employeeSetup: []
+  };
 
   // Fetch data from each service with timeout and error handling
   const promises = settings.map(async (setting) => {
@@ -90,18 +91,15 @@ router.get('/data', asyncHandler(async (req, res) => {
   res.json(results);
 }));
 
-// Helper function to get settings from database
-function getSettingsFromDB() {
-  return new Promise((resolve, reject) => {
-    db.all('SELECT * FROM settings', [], (err, rows) => {
-      if (err) {
-        logger.error('Database error fetching settings:', err);
-        reject(err);
-      } else {
-        resolve(rows);
-      }
-    });
-  });
+// Helper function to get settings from database, decrypting sensitive fields
+async function getSettingsFromDB() {
+  const rows = await dbAll('SELECT * FROM settings');
+  return rows.map(row => ({
+    ...row,
+    api_key: decrypt(row.api_key),
+    api_secret: decrypt(row.api_secret),
+    password: decrypt(row.password)
+  }));
 }
 
 // Timeout helper function

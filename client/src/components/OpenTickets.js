@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, Typography, List, ListItem, ListItemText, Chip } from '@mui/material';
 
-function OpenTickets({ data }) {
+function OpenTickets({ data, sourceUrl }) {
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
       case 'high':
@@ -21,9 +21,11 @@ function OpenTickets({ data }) {
       <CardContent>
         <Typography variant="h6" component="h2" gutterBottom>
           Open Cases
-          <a href="https://johnstonesupply-thewinesgroup.superops.ai/#/ticket/5567332540152205312/ticket-list" target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', fontSize: '14px' }}>
-            🔗
-          </a>
+          {sourceUrl && (
+            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', fontSize: '14px' }}>
+              Open
+            </a>
+          )}
         </Typography>
         {data.length === 0 ? (
           <Typography variant="body2" color="textSecondary">

@@ -9,7 +9,8 @@ const errorHandler = (err, req, res, next) => {
     url: req.url,
     method: req.method,
     ip: req.ip,
-    userAgent: req.get('User-Agent')
+    userAgent: req.get('User-Agent'),
+    requestId: req.id
   });
 
   // Don't expose internal errors in production
@@ -36,6 +37,7 @@ const errorHandler = (err, req, res, next) => {
   // In production, don't send stack traces
   const errorResponse = {
     error: message,
+    ...(req.id && { requestId: req.id }),
     ...(isDevelopment && { stack: err.stack })
   };
 

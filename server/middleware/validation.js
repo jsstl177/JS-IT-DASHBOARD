@@ -1,3 +1,6 @@
+const validator = require('validator');
+const { ALLOWED_STATUSES } = require('../utils/constants');
+
 // Input validation middleware
 const validateSettings = (req, res, next) => {
   const { service, api_key, base_url } = req.body;
@@ -89,6 +92,37 @@ const validateLogin = (req, res, next) => {
   next();
 };
 
+const validateEmployeeSetup = (req, res, next) => {
+  const { employee_name, employee_email, store_number } = req.body;
+
+  const errors = [];
+
+  if (!employee_name || typeof employee_name !== 'string' || employee_name.trim().length === 0) {
+    errors.push('Employee name is required');
+  }
+
+  if (employee_email && !validator.isEmail(employee_email)) {
+    errors.push('Invalid email format');
+  }
+
+  if (store_number && !validator.isAlphanumeric(String(store_number))) {
+    errors.push('Store number must be alphanumeric');
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: errors
+    });
+  }
+
+  next();
+};
+
+const validateStatus = (status) => {
+  return ALLOWED_STATUSES.includes(status);
+};
+
 // URL validation helper
 function isValidUrl(string) {
   try {
@@ -99,10 +133,10 @@ function isValidUrl(string) {
   }
 }
 
-// Sanitize input helper
+// Sanitize input helper - use validator.escape for proper HTML entity encoding
 const sanitizeInput = (input) => {
   if (typeof input === 'string') {
-    return input.trim().replace(/[<>]/g, '');
+    return validator.escape(input.trim());
   }
   return input;
 };
@@ -110,5 +144,7 @@ const sanitizeInput = (input) => {
 module.exports = {
   validateSettings,
   validateLogin,
+  validateEmployeeSetup,
+  validateStatus,
   sanitizeInput
 };

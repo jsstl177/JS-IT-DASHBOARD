@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
+import { CssBaseline, Snackbar, Alert } from '@mui/material';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import axios from 'axios';
 import NetworkStatus from './components/NetworkStatus';
@@ -13,6 +13,7 @@ import EmployeeSetup from './components/EmployeeSetup';
 import Settings from './components/Settings';
 import Login from './components/Login';
 import ThemeSelector from './components/ThemeSelector';
+import ErrorBoundary from './components/ErrorBoundary';
 import { themes } from './themes';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -23,6 +24,8 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 function App() {
   const [dashboardData, setDashboardData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retrying, setRetrying] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('theme') || 'default');
@@ -36,22 +39,31 @@ function App() {
     { i: 'powerbi', x: 6, y: 14, w: 6, h: 4 }
   ]);
 
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/dashboard/data');
+      setDashboardData(response.data);
+      setError(null);
+      setLoading(false);
+      setRetrying(false);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data. Retrying...');
+      setLoading(false);
+
+      // Auto-retry after 10 seconds
+      setRetrying(true);
+      setTimeout(() => {
+        fetchDashboardData();
+      }, 10000);
+    }
+  }, []);
+
   useEffect(() => {
     fetchDashboardData();
     const interval = setInterval(fetchDashboardData, 60000); // Refresh every minute
     return () => clearInterval(interval);
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const response = await axios.get('/api/dashboard/data');
-      setDashboardData(response.data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setLoading(false);
-    }
-  };
+  }, [fetchDashboardData]);
 
   const handleLogin = (token) => {
     localStorage.setItem('authToken', token);
@@ -69,6 +81,12 @@ function App() {
     setCurrentTheme(themeName);
     localStorage.setItem('theme', themeName);
   };
+
+  const networkStatus = dashboardData.networkStatus || {};
+  const openTickets = dashboardData.openTickets || {};
+  const automationLogs = dashboardData.automationLogs || {};
+  const n8nExecutions = dashboardData.n8nExecutions || {};
+  const proxmoxStatus = dashboardData.proxmoxStatus || {};
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
@@ -91,6 +109,18 @@ function App() {
           </div>
         </header>
 
+        <Snackbar
+          open={!!error}
+          autoHideDuration={retrying ? null : 6000}
+          onClose={() => setError(null)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert severity="error" onClose={() => setError(null)} variant="filled">
+            {error}
+            {retrying && ' Auto-retrying...'}
+          </Alert>
+        </Snackbar>
+
         <main>
           {showSettings ? (
             isLoggedIn ? (
@@ -99,38 +129,55 @@ function App() {
               <Login onLogin={handleLogin} />
             )
           ) : (
-            <ResponsiveGridLayout
-              className="layout"
-              layouts={{ lg: layout }}
-              onLayoutChange={(currentLayout) => setLayout(currentLayout)}
-              breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-              cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-              rowHeight={30}
-              isDraggable={true}
-              isResizable={true}
-            >
-              <div key="network" className="dashboard-widget">
-                <NetworkStatus data={dashboardData.networkStatus || []} />
-              </div>
-              <div key="tickets" className="dashboard-widget">
-                <OpenTickets data={dashboardData.openTickets || []} />
-              </div>
-              <div key="employee-setup" className="dashboard-widget">
-                <EmployeeSetup data={dashboardData.employeeSetup || []} />
-              </div>
-              <div key="logs" className="dashboard-widget">
-                <AutomationLogs data={dashboardData.automationLogs || []} />
-              </div>
-              <div key="n8n" className="dashboard-widget">
-                <N8NExecutions data={dashboardData.n8nExecutions || []} />
-              </div>
-              <div key="proxmox" className="dashboard-widget">
-                <ProxmoxStatus data={dashboardData.proxmoxStatus || []} />
-              </div>
-              <div key="powerbi" className="dashboard-widget">
-                <PowerBI data={dashboardData.powerbiInfo} />
-              </div>
-            </ResponsiveGridLayout>
+            <ErrorBoundary>
+              <ResponsiveGridLayout
+                className="layout"
+                layouts={{ lg: layout }}
+                onLayoutChange={(currentLayout) => setLayout(currentLayout)}
+                breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+                cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+                rowHeight={30}
+                isDraggable={true}
+                isResizable={true}
+              >
+                <div key="network" className="dashboard-widget">
+                  <NetworkStatus
+                    data={networkStatus.items || []}
+                    sourceUrl={networkStatus.sourceUrl}
+                  />
+                </div>
+                <div key="tickets" className="dashboard-widget">
+                  <OpenTickets
+                    data={openTickets.items || []}
+                    sourceUrl={openTickets.sourceUrl}
+                  />
+                </div>
+                <div key="employee-setup" className="dashboard-widget">
+                  <EmployeeSetup data={dashboardData.employeeSetup || []} />
+                </div>
+                <div key="logs" className="dashboard-widget">
+                  <AutomationLogs
+                    data={automationLogs.items || []}
+                    sourceUrl={automationLogs.sourceUrl}
+                  />
+                </div>
+                <div key="n8n" className="dashboard-widget">
+                  <N8NExecutions
+                    data={n8nExecutions.items || []}
+                    sourceUrl={n8nExecutions.sourceUrl}
+                  />
+                </div>
+                <div key="proxmox" className="dashboard-widget">
+                  <ProxmoxStatus
+                    data={proxmoxStatus.items || []}
+                    sourceUrl={proxmoxStatus.sourceUrl}
+                  />
+                </div>
+                <div key="powerbi" className="dashboard-widget">
+                  <PowerBI data={dashboardData.powerbiInfo} />
+                </div>
+              </ResponsiveGridLayout>
+            </ErrorBoundary>
           )}
         </main>
       </div>
