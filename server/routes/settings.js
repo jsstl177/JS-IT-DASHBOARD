@@ -6,6 +6,7 @@ const { validateLogin, validateSettings, sanitizeInput } = require('../middlewar
 const { asyncHandler } = require('../middleware/errorHandler');
 const { encrypt, decrypt } = require('../utils/crypto');
 const { dbGet, dbAll, dbRun } = require('../utils/dbHelpers');
+const { testServiceConnection } = require('../services/connectionTester');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -92,8 +93,15 @@ router.post('/', authenticateToken, validateSettings, asyncHandler(async (req, r
   };
 
   const query = `
-    INSERT OR REPLACE INTO settings (service, api_key, api_secret, base_url, username, password, updated_at)
+    INSERT INTO settings (service, api_key, api_secret, base_url, username, password, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON DUPLICATE KEY UPDATE
+    api_key = VALUES(api_key),
+    api_secret = VALUES(api_secret),
+    base_url = VALUES(base_url),
+    username = VALUES(username),
+    password = VALUES(password),
+    updated_at = CURRENT_TIMESTAMP
   `;
 
   await dbRun(query, [
@@ -106,6 +114,58 @@ router.post('/', authenticateToken, validateSettings, asyncHandler(async (req, r
   ]);
 
   res.json({ message: 'Setting updated successfully' });
+}));
+
+// Test service connection
+router.post('/test/:service', authenticateToken, asyncHandler(async (req, res) => {
+  const { service } = req.params;
+
+  const setting = await dbGet(
+    'SELECT service, api_key, api_secret, base_url, username, password FROM settings WHERE service = ?',
+    [service]
+  );
+
+  if (!setting) {
+    return res.json({ success: false, message: `No configuration found for ${service}.` });
+  }
+
+  const config = {
+    ...setting,
+    api_key: decrypt(setting.api_key),
+    api_secret: decrypt(setting.api_secret),
+    password: decrypt(setting.password)
+  };
+
+  const OUTER_TIMEOUT = 8000;
+
+  try {
+    const result = await Promise.race([
+      testServiceConnection(service, config),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Connection test timed out after 8 seconds.')), OUTER_TIMEOUT)
+      )
+    ]);
+    res.json(result);
+  } catch (err) {
+    let message = err.message || 'Connection test failed.';
+
+    if (err.code === 'ECONNREFUSED') {
+      message = `Connection refused. Verify the service is running and the URL is correct.`;
+    } else if (err.code === 'ENOTFOUND') {
+      message = `Host not found. Check the base URL for typos.`;
+    } else if (err.code === 'ECONNABORTED') {
+      message = `Connection timed out. The service may be slow or unreachable.`;
+    } else if (err.response) {
+      const status = err.response.status;
+      if (status === 401 || status === 403) {
+        message = `Authentication failed (HTTP ${status}). Check your API key or credentials.`;
+      } else {
+        message = `Service returned HTTP ${status}.`;
+      }
+    }
+
+    res.json({ success: false, message });
+  }
 }));
 
 // Delete setting

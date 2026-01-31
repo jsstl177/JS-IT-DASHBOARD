@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   Card, CardContent, Typography, TextField, Button, Grid,
   Alert, List, ListItem, ListItemText, IconButton, Dialog,
-  DialogTitle, DialogContent, DialogActions
+  DialogTitle, DialogContent, DialogActions, CircularProgress, Chip
 } from '@mui/material';
-import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon, Add as AddIcon, PlayArrow as PlayArrowIcon } from '@mui/icons-material';
 import axios from 'axios';
 
 function Settings({ onClose }) {
@@ -21,6 +21,8 @@ function Settings({ onClose }) {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, service: null });
+  const [testingService, setTestingService] = useState(null);
+  const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
     fetchSettings();
@@ -83,6 +85,22 @@ function Settings({ onClose }) {
       setError('Failed to delete setting');
     }
     setDeleteDialog({ open: false, service: null });
+  };
+
+  const handleTestConnection = async (service) => {
+    setTestingService(service);
+    setTestResult(null);
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.post(`/api/settings/test/${service}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTestResult({ service, ...response.data });
+    } catch (err) {
+      setTestResult({ service, success: false, message: err.response?.data?.message || 'Test request failed.' });
+    } finally {
+      setTestingService(null);
+    }
   };
 
   const getServiceDisplayName = (service) => {
@@ -191,6 +209,24 @@ function Settings({ onClose }) {
                       primary={getServiceDisplayName(setting.service)}
                       secondary={`URL: ${setting.base_url || 'Not set'}`}
                     />
+                    {testResult && testResult.service === setting.service && (
+                      <Chip
+                        label={testResult.success ? 'OK' : 'Failed'}
+                        color={testResult.success ? 'success' : 'error'}
+                        size="small"
+                        sx={{ mr: 1 }}
+                      />
+                    )}
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={testingService === setting.service ? <CircularProgress size={16} /> : <PlayArrowIcon />}
+                      onClick={() => handleTestConnection(setting.service)}
+                      disabled={testingService !== null}
+                      sx={{ mr: 1 }}
+                    >
+                      Test
+                    </Button>
                     <IconButton
                       edge="end"
                       onClick={() => setDeleteDialog({ open: true, service: setting.service })}
@@ -213,6 +249,15 @@ function Settings({ onClose }) {
       {success && (
         <Alert severity="success" style={{ marginTop: '20px' }}>
           {success}
+        </Alert>
+      )}
+      {testResult && (
+        <Alert
+          severity={testResult.success ? 'success' : 'error'}
+          style={{ marginTop: '20px' }}
+          onClose={() => setTestResult(null)}
+        >
+          <strong>{getServiceDisplayName(testResult.service)}:</strong> {testResult.message}
         </Alert>
       )}
 
