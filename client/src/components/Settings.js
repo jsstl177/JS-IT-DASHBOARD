@@ -4,7 +4,7 @@ import {
   Alert, List, ListItem, ListItemText, IconButton, Dialog,
   DialogTitle, DialogContent, DialogActions, CircularProgress, Chip
 } from '@mui/material';
-import { Delete as DeleteIcon, Add as AddIcon, PlayArrow as PlayArrowIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon, Add as AddIcon, Edit as EditIcon, PlayArrow as PlayArrowIcon } from '@mui/icons-material';
 import axios from 'axios';
 
 function Settings({ onClose }) {
@@ -23,6 +23,7 @@ function Settings({ onClose }) {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, service: null });
   const [testingService, setTestingService] = useState(null);
   const [testResult, setTestResult] = useState(null);
+  const [editingService, setEditingService] = useState(null);
 
   useEffect(() => {
     fetchSettings();
@@ -56,7 +57,8 @@ function Settings({ onClose }) {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setSuccess('Setting saved successfully');
+      setSuccess(editingService ? 'Setting updated successfully' : 'Setting saved successfully');
+      setEditingService(null);
       setNewSetting({
         service: '',
         api_key: '',
@@ -103,6 +105,34 @@ function Settings({ onClose }) {
     }
   };
 
+  const handleEdit = (setting) => {
+    setEditingService(setting.service);
+    setNewSetting({
+      service: setting.service,
+      api_key: setting.api_key || '',
+      api_secret: setting.api_secret || '',
+      base_url: setting.base_url || '',
+      username: setting.username || '',
+      password: ''
+    });
+    setError('');
+    setSuccess('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingService(null);
+    setNewSetting({
+      service: '',
+      api_key: '',
+      api_secret: '',
+      base_url: '',
+      username: '',
+      password: ''
+    });
+    setError('');
+    setSuccess('');
+  };
+
   const getServiceDisplayName = (service) => {
     const names = {
       'uptime-kuma': 'Uptime Kuma',
@@ -126,7 +156,7 @@ function Settings({ onClose }) {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Add/Edit Service Configuration
+                {editingService ? `Edit ${getServiceDisplayName(editingService)} Configuration` : 'Add Service Configuration'}
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
@@ -134,6 +164,7 @@ function Settings({ onClose }) {
                     fullWidth
                     label="Service"
                     select
+                    disabled={!!editingService}
                     value={newSetting.service}
                     onChange={(e) => setNewSetting({ ...newSetting, service: e.target.value })}
                     SelectProps={{ native: true }}
@@ -176,6 +207,7 @@ function Settings({ onClose }) {
                     fullWidth
                     label="Password"
                     type="password"
+                    placeholder={editingService ? 'Leave blank to keep existing' : ''}
                     value={newSetting.password}
                     onChange={(e) => setNewSetting({ ...newSetting, password: e.target.value })}
                   />
@@ -186,10 +218,19 @@ function Settings({ onClose }) {
                     color="primary"
                     onClick={handleSave}
                     disabled={loading}
-                    startIcon={<AddIcon />}
+                    startIcon={editingService ? <EditIcon /> : <AddIcon />}
                   >
-                    {loading ? 'Saving...' : 'Save Configuration'}
+                    {loading ? 'Saving...' : editingService ? 'Update Configuration' : 'Save Configuration'}
                   </Button>
+                  {editingService && (
+                    <Button
+                      variant="outlined"
+                      onClick={handleCancelEdit}
+                      sx={{ ml: 1 }}
+                    >
+                      Cancel
+                    </Button>
+                  )}
                 </Grid>
               </Grid>
             </CardContent>
@@ -227,6 +268,12 @@ function Settings({ onClose }) {
                     >
                       Test
                     </Button>
+                    <IconButton
+                      onClick={() => handleEdit(setting)}
+                      sx={{ mr: 0.5 }}
+                    >
+                      <EditIcon />
+                    </IconButton>
                     <IconButton
                       edge="end"
                       onClick={() => setDeleteDialog({ open: true, service: setting.service })}
