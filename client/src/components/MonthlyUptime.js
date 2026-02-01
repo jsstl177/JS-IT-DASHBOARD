@@ -119,7 +119,7 @@ function MonthlyUptime({ data, sourceUrl }) {
     <Card sx={{ height: '100%' }}>
       <CardContent>
         <Typography variant="h6" component="h2" gutterBottom>
-          Last Month's Uptime
+          Last 30-Days Uptime
           {sourceUrl && (
             <a
               href={sourceUrl}
