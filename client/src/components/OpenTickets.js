@@ -119,7 +119,7 @@ function OpenTickets({ data, sourceUrl, totalCount }) {
         ) : (
           <Box sx={{ flex: 1, overflow: 'auto' }}>
             <List dense disablePadding>
-              {data.map((ticket) => {
+              {[...data].sort((a, b) => new Date(b.createdTime || 0) - new Date(a.createdTime || 0)).map((ticket) => {
                 const pStyle = getPriorityStyle(ticket.priority);
                 return (
                   <ListItem

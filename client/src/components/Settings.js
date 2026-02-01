@@ -191,6 +191,56 @@ function Settings({ onClose }) {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
+                Current Configurations
+              </Typography>
+              <List>
+                {settings.map((setting) => (
+                  <ListItem key={setting.service}>
+                    <ListItemText
+                      primary={getServiceDisplayName(setting.service)}
+                      secondary={`URL: ${setting.base_url || 'Not set'}`}
+                    />
+                    {testResult && testResult.service === setting.service && (
+                      <Chip
+                        label={testResult.success ? 'OK' : 'Failed'}
+                        color={testResult.success ? 'success' : 'error'}
+                        size="small"
+                        sx={{ mr: 1 }}
+                      />
+                    )}
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={testingService === setting.service ? <CircularProgress size={16} /> : <PlayArrowIcon />}
+                      onClick={() => handleTestConnection(setting.service)}
+                      disabled={testingService !== null}
+                      sx={{ mr: 1 }}
+                    >
+                      Test
+                    </Button>
+                    <IconButton
+                      onClick={() => handleEdit(setting)}
+                      sx={{ mr: 0.5 }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      edge="end"
+                      onClick={() => setDeleteDialog({ open: true, service: setting.service })}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
                 {editingService ? `Edit ${getServiceDisplayName(editingService)} Configuration` : 'Add Service Configuration'}
               </Typography>
               <Grid container spacing={2}>
@@ -272,56 +322,6 @@ function Settings({ onClose }) {
                   )}
                 </Grid>
               </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Current Configurations
-              </Typography>
-              <List>
-                {settings.map((setting) => (
-                  <ListItem key={setting.service}>
-                    <ListItemText
-                      primary={getServiceDisplayName(setting.service)}
-                      secondary={`URL: ${setting.base_url || 'Not set'}`}
-                    />
-                    {testResult && testResult.service === setting.service && (
-                      <Chip
-                        label={testResult.success ? 'OK' : 'Failed'}
-                        color={testResult.success ? 'success' : 'error'}
-                        size="small"
-                        sx={{ mr: 1 }}
-                      />
-                    )}
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={testingService === setting.service ? <CircularProgress size={16} /> : <PlayArrowIcon />}
-                      onClick={() => handleTestConnection(setting.service)}
-                      disabled={testingService !== null}
-                      sx={{ mr: 1 }}
-                    >
-                      Test
-                    </Button>
-                    <IconButton
-                      onClick={() => handleEdit(setting)}
-                      sx={{ mr: 0.5 }}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      edge="end"
-                      onClick={() => setDeleteDialog({ open: true, service: setting.service })}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </ListItem>
-                ))}
-              </List>
             </CardContent>
           </Card>
         </Grid>

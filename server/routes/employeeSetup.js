@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
 
 const router = express.Router();
 
-// Get all employee setup checklists
+// Get all employee setup checklists (with items)
 router.get('/', asyncHandler(async (req, res) => {
   logger.info('Fetching employee setup checklists');
 
@@ -21,6 +21,14 @@ router.get('/', asyncHandler(async (req, res) => {
     GROUP BY c.id
     ORDER BY c.created_at DESC
   `);
+
+  // Attach items to each checklist
+  for (const checklist of checklists) {
+    checklist.items = await dbAll(
+      'SELECT * FROM checklist_items WHERE checklist_id = ? ORDER BY category, item_name',
+      [checklist.id]
+    );
+  }
 
   res.json(checklists);
 }));

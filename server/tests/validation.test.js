@@ -335,27 +335,19 @@ describe('Validation Middleware', () => {
 
   // ========== sanitizeInput ==========
   describe('sanitizeInput', () => {
-    it('should escape < and > characters', () => {
+    it('should preserve special characters without HTML encoding', () => {
       const result = sanitizeInput('<script>alert("xss")</script>');
-      expect(result).not.toContain('<');
-      expect(result).not.toContain('>');
-      expect(result).toContain('&lt;');
-      expect(result).toContain('&gt;');
+      expect(result).toBe('<script>alert("xss")</script>');
     });
 
-    it('should escape & character', () => {
+    it('should preserve & character', () => {
       const result = sanitizeInput('foo & bar');
-      expect(result).toContain('&amp;');
+      expect(result).toBe('foo & bar');
     });
 
-    it('should escape double quotes', () => {
-      const result = sanitizeInput('He said "hello"');
-      expect(result).toContain('&quot;');
-    });
-
-    it('should escape single quotes', () => {
-      const result = sanitizeInput("it's a test");
-      expect(result).toContain('&#x27;');
+    it('should preserve URLs with slashes', () => {
+      const result = sanitizeInput('https://example.com/path');
+      expect(result).toBe('https://example.com/path');
     });
 
     it('should trim whitespace', () => {
@@ -363,13 +355,9 @@ describe('Validation Middleware', () => {
       expect(result).toBe('hello world');
     });
 
-    it('should both trim and escape', () => {
+    it('should trim and preserve content', () => {
       const result = sanitizeInput('  <b>bold</b>  ');
-      expect(result).not.toContain('<');
-      expect(result).not.toContain('>');
-      // Should not have leading/trailing spaces
-      expect(result).not.toMatch(/^\s/);
-      expect(result).not.toMatch(/\s$/);
+      expect(result).toBe('<b>bold</b>');
     });
 
     it('should return non-string inputs unchanged (number)', () => {

@@ -95,8 +95,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Static files
-app.use(express.static(path.join(__dirname, '../client/build')));
+// Static files — hashed assets are long-cached; index.html is never cached
+app.use(express.static(path.join(__dirname, 'client/build'), {
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  }
+}));
 
 // Routes
 app.use('/api/settings', require('./routes/settings'));
@@ -104,25 +110,31 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/employee-setup', require('./routes/employeeSetup'));
 
 // Enhanced health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', asyncHandler(async (req, res) => {
   let dbStatus = 'healthy';
 
-  db.get('SELECT 1', [], (err) => {
-    if (err) {
-      dbStatus = 'degraded';
-      logger.warn('Health check: database unreachable', { error: err.message });
-    }
+  try {
+    await db.execute('SELECT 1');
+  } catch (err) {
+    dbStatus = 'degraded';
+    logger.warn('Health check: database unreachable', { error: err.message });
+  }
 
-    const status = dbStatus === 'healthy' ? 'healthy' : 'degraded';
+  const status = dbStatus === 'healthy' ? 'healthy' : 'degraded';
 
-    res.status(dbStatus === 'healthy' ? 200 : 503).json({
-      status,
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      version: pkg.version,
-      database: dbStatus
-    });
+  res.status(dbStatus === 'healthy' ? 200 : 503).json({
+    status,
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: pkg.version,
+    database: dbStatus
   });
+}));
+
+// Catch-all handler for React Router (Express 5 named wildcard syntax)
+app.get('/{*splat}', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, 'client/build/index.html'));
 });
 
 // 404 handler
@@ -132,7 +144,7 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start the server and store the instance for graceful shutdown
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   logger.info(`Server running on port ${PORT}`, {
     environment: process.env.NODE_ENV || 'development',
     port: PORT
@@ -143,16 +155,15 @@ const server = app.listen(PORT, () => {
 function gracefulShutdown(signal) {
   logger.info(`${signal} received, shutting down gracefully`);
 
-  server.close(() => {
+  server.close(async () => {
     logger.info('HTTP server closed');
-    db.close((err) => {
-      if (err) {
-        logger.error('Error closing database', { error: err.message });
-      } else {
-        logger.info('Database connection closed');
-      }
-      process.exit(0);
-    });
+    try {
+      await db.end();
+      logger.info('Database connection closed');
+    } catch (err) {
+      logger.error('Error closing database', { error: err.message });
+    }
+    process.exit(0);
   });
 
   // Force exit after 10 seconds as a safety net

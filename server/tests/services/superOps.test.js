@@ -7,144 +7,223 @@ jest.mock('../../utils/logger', () => ({
 }));
 
 const axios = require('axios');
-const { getOpenTickets } = require('../../services/superOps');
+const { getOpenTickets, extractSubdomain } = require('../../services/superOps');
 
-// Set up mock axios client
-const mockClient = {
-  get: jest.fn(),
-  post: jest.fn()
-};
-axios.create.mockReturnValue(mockClient);
-
-describe('SuperOps Service - getOpenTickets', () => {
+describe('SuperOps Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    axios.create.mockReturnValue(mockClient);
   });
 
-  it('should return sourceUrl and items on successful fetch', async () => {
-    mockClient.get.mockResolvedValue({
-      data: {
-        tickets: [
-          {
-            id: 101,
-            title: 'Printer broken',
-            status: 'open',
-            priority: 'high',
-            created_at: '2025-01-01',
-            updated_at: '2025-01-02',
-            assignee: 'admin'
+  describe('extractSubdomain', () => {
+    it('should extract subdomain from tenant URL', () => {
+      expect(extractSubdomain('https://johnstonesupply-thewinesgroup.superops.ai'))
+        .toBe('johnstonesupply-thewinesgroup');
+    });
+
+    it('should extract subdomain with trailing slash', () => {
+      expect(extractSubdomain('https://mycompany.superops.ai/'))
+        .toBe('mycompany');
+    });
+
+    it('should return hostname for non-superops URLs', () => {
+      expect(extractSubdomain('https://example.com'))
+        .toBe('example.com');
+    });
+
+    it('should return raw string for invalid URLs', () => {
+      expect(extractSubdomain('not-a-url'))
+        .toBe('not-a-url');
+    });
+  });
+
+  describe('getOpenTickets', () => {
+    const tenantUrl = 'https://johnstonesupply-thewinesgroup.superops.ai';
+
+    it('should return tickets on successful GraphQL response', async () => {
+      axios.post.mockResolvedValue({
+        data: {
+          data: {
+            getTicketList: {
+              tickets: [
+                {
+                  ticketId: '123',
+                  displayId: '012025-0001',
+                  subject: 'Printer not working',
+                  status: 'Open',
+                  priority: 'High',
+                  createdTime: '2026-01-15T10:00:00',
+                  updatedTime: '2026-01-15T12:00:00',
+                  technician: { userId: '1', name: 'John Doe' },
+                  requester: { userId: '2', name: 'Jane Smith' },
+                  client: { name: 'Acme Corp' },
+                  site: { name: 'Main Office' }
+                }
+              ],
+              listInfo: { totalCount: 1, hasMore: false }
+            }
           }
-        ]
-      }
+        }
+      });
+
+      const result = await getOpenTickets(tenantUrl, 'test-api-key');
+
+      expect(result.sourceUrl).toBe('https://johnstonesupply-thewinesgroup.superops.ai/servicedesk/tickets');
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]).toEqual({
+        id: '123',
+        displayId: '012025-0001',
+        title: 'Printer not working',
+        status: 'Open',
+        priority: 'High',
+        createdTime: '2026-01-15T10:00:00',
+        updatedTime: '2026-01-15T12:00:00',
+        technician: 'John Doe',
+        requester: 'Jane Smith',
+        client: 'Acme Corp',
+        site: 'Main Office',
+        link: 'https://johnstonesupply-thewinesgroup.superops.ai/servicedesk/tickets/012025-0001'
+      });
+      expect(result.totalCount).toBe(1);
     });
 
-    const result = await getOpenTickets('https://superops.example.com', 'api-key-123');
+    it('should send correct GraphQL request with headers', async () => {
+      axios.post.mockResolvedValue({
+        data: { data: { getTicketList: { tickets: [], listInfo: { totalCount: 0 } } } }
+      });
 
-    expect(result.sourceUrl).toBe('https://superops.example.com/ticket');
-    expect(result.items).toHaveLength(1);
-    expect(result.items[0]).toEqual({
-      id: 101,
-      title: 'Printer broken',
-      status: 'open',
-      priority: 'high',
-      created_at: '2025-01-01',
-      updated_at: '2025-01-02',
-      assignee: 'admin',
-      link: 'https://superops.example.com/ticket/101'
-    });
-  });
+      await getOpenTickets(tenantUrl, 'my-token');
 
-  it('should handle tickets in response.data.tickets format', async () => {
-    mockClient.get.mockResolvedValue({
-      data: {
-        tickets: [
-          { id: 1, title: 'Ticket 1', status: 'open', priority: 'low', created_at: '2025-01-01', updated_at: '2025-01-01', assignee: 'user1' },
-          { id: 2, title: 'Ticket 2', status: 'open', priority: 'medium', created_at: '2025-01-02', updated_at: '2025-01-02', assignee: 'user2' }
-        ]
-      }
-    });
-
-    const result = await getOpenTickets('https://superops.example.com', 'api-key-123');
-
-    expect(result.items).toHaveLength(2);
-    expect(result.items[0].id).toBe(1);
-    expect(result.items[1].id).toBe(2);
-  });
-
-  it('should handle tickets directly in response.data (array fallback)', async () => {
-    mockClient.get.mockResolvedValue({
-      data: [
-        { id: 1, subject: 'Network down', status: 'open', priority: 'critical', created_at: '2025-01-01', updated_at: '2025-01-01', assignee: 'admin' }
-      ]
+      expect(axios.post).toHaveBeenCalledWith(
+        'https://api.superops.ai/msp',
+        expect.objectContaining({
+          query: expect.stringContaining('getTicketList'),
+          variables: expect.objectContaining({
+            input: expect.objectContaining({
+              page: 1,
+              pageSize: 100,
+              condition: {
+                attribute: 'status',
+                operator: 'notIncludes',
+                value: ['Resolved', 'Closed']
+              }
+            })
+          })
+        }),
+        expect.objectContaining({
+          headers: {
+            'Authorization': 'Bearer my-token',
+            'CustomerSubDomain': 'johnstonesupply-thewinesgroup',
+            'Content-Type': 'application/json'
+          }
+        })
+      );
     });
 
-    const result = await getOpenTickets('https://superops.example.com', 'api-key-123');
+    it('should handle GraphQL errors', async () => {
+      axios.post.mockResolvedValue({
+        data: {
+          errors: [{ message: 'Unauthorized' }]
+        }
+      });
 
-    expect(result.items).toHaveLength(1);
-    // Uses subject as title fallback
-    expect(result.items[0].title).toBe('Network down');
-  });
+      const result = await getOpenTickets(tenantUrl, 'bad-key');
 
-  it('should use subject as title fallback', async () => {
-    mockClient.get.mockResolvedValue({
-      data: {
-        tickets: [
-          { id: 1, subject: 'Subject Field', status: 'open', priority: 'low', created_at: '2025-01-01', updated_at: '2025-01-01', assignee: null }
-        ]
-      }
+      expect(result.items).toEqual([]);
+      expect(result.totalCount).toBe(0);
     });
 
-    const result = await getOpenTickets('https://superops.example.com', 'api-key-123');
+    it('should handle network errors', async () => {
+      axios.post.mockRejectedValue(new Error('Network Error'));
 
-    expect(result.items[0].title).toBe('Subject Field');
-  });
+      const result = await getOpenTickets(tenantUrl, 'test-key');
 
-  it('should return empty items on error', async () => {
-    mockClient.get.mockRejectedValue(new Error('API Error'));
-
-    const result = await getOpenTickets('https://superops.example.com', 'api-key-123');
-
-    expect(result.sourceUrl).toBe('https://superops.example.com');
-    expect(result.items).toEqual([]);
-  });
-
-  it('should create axios client with correct config', async () => {
-    mockClient.get.mockResolvedValue({ data: { tickets: [] } });
-
-    await getOpenTickets('https://superops.example.com', 'my-api-key');
-
-    expect(axios.create).toHaveBeenCalledWith({
-      baseURL: 'https://superops.example.com',
-      timeout: 10000,
-      headers: {
-        'Authorization': 'Bearer my-api-key',
-        'Content-Type': 'application/json'
-      }
-    });
-  });
-
-  it('should pass status=open as query param', async () => {
-    mockClient.get.mockResolvedValue({ data: { tickets: [] } });
-
-    await getOpenTickets('https://superops.example.com', 'api-key-123');
-
-    expect(mockClient.get).toHaveBeenCalledWith('/api/tickets', {
-      params: { status: 'open' }
-    });
-  });
-
-  it('should generate correct link per ticket', async () => {
-    mockClient.get.mockResolvedValue({
-      data: {
-        tickets: [
-          { id: 42, title: 'Test', status: 'open', priority: 'low', created_at: '2025-01-01', updated_at: '2025-01-01', assignee: null }
-        ]
-      }
+      expect(result.sourceUrl).toBe(tenantUrl);
+      expect(result.items).toEqual([]);
+      expect(result.totalCount).toBe(0);
     });
 
-    const result = await getOpenTickets('https://superops.example.com', 'api-key-123');
+    it('should handle empty ticket list', async () => {
+      axios.post.mockResolvedValue({
+        data: { data: { getTicketList: { tickets: [], listInfo: { totalCount: 0, hasMore: false } } } }
+      });
 
-    expect(result.items[0].link).toBe('https://superops.example.com/ticket/42');
+      const result = await getOpenTickets(tenantUrl, 'test-key');
+
+      expect(result.items).toEqual([]);
+      expect(result.totalCount).toBe(0);
+    });
+
+    it('should handle technician/requester as strings', async () => {
+      axios.post.mockResolvedValue({
+        data: {
+          data: {
+            getTicketList: {
+              tickets: [{
+                ticketId: '1',
+                displayId: 'T-001',
+                subject: 'Test',
+                status: 'Open',
+                priority: 'Low',
+                createdTime: null,
+                updatedTime: null,
+                technician: 'Direct Name',
+                requester: 'Direct Requester',
+                client: 'Direct Client',
+                site: null
+              }],
+              listInfo: { totalCount: 1 }
+            }
+          }
+        }
+      });
+
+      const result = await getOpenTickets(tenantUrl, 'test-key');
+
+      expect(result.items[0].technician).toBe('Direct Name');
+      expect(result.items[0].requester).toBe('Direct Requester');
+      expect(result.items[0].client).toBe('Direct Client');
+      expect(result.items[0].site).toBeNull();
+    });
+
+    it('should handle missing getTicketList data', async () => {
+      axios.post.mockResolvedValue({
+        data: { data: {} }
+      });
+
+      const result = await getOpenTickets(tenantUrl, 'test-key');
+
+      expect(result.items).toEqual([]);
+      expect(result.totalCount).toBe(0);
+    });
+
+    it('should strip trailing slash from tenant URL in links', async () => {
+      axios.post.mockResolvedValue({
+        data: {
+          data: {
+            getTicketList: {
+              tickets: [{
+                ticketId: '1',
+                displayId: 'T-001',
+                subject: 'Test',
+                status: 'Open',
+                priority: 'Low',
+                createdTime: null,
+                updatedTime: null,
+                technician: null,
+                requester: null,
+                client: null,
+                site: null
+              }],
+              listInfo: { totalCount: 1 }
+            }
+          }
+        }
+      });
+
+      const result = await getOpenTickets('https://mycompany.superops.ai/', 'test-key');
+
+      expect(result.sourceUrl).toBe('https://mycompany.superops.ai/servicedesk/tickets');
+      expect(result.items[0].link).toBe('https://mycompany.superops.ai/servicedesk/tickets/T-001');
+    });
   });
 });

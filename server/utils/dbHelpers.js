@@ -1,30 +1,18 @@
-const db = require('../db');
+const pool = require('../db');
 
-function dbGet(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
+async function dbGet(sql, params = []) {
+  const [rows] = await pool.execute(sql, params);
+  return rows[0] || null;
 }
 
-function dbAll(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
+async function dbAll(sql, params = []) {
+  const [rows] = await pool.execute(sql, params);
+  return rows;
 }
 
-function dbRun(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function (err) {
-      if (err) reject(err);
-      else resolve({ lastID: this.lastID, changes: this.changes });
-    });
-  });
+async function dbRun(sql, params = []) {
+  const [result] = await pool.execute(sql, params);
+  return { lastID: result.insertId, changes: result.affectedRows };
 }
 
 module.exports = { dbGet, dbAll, dbRun };

@@ -39,7 +39,7 @@ RUN npm install --only=production
 
 # Copy server source
 COPY server/ ./
-# Updated server code v3
+# Updated server code v4 - alerts + assets
 
 # Copy built client
 COPY --from=builder /app/client/build ./client/build

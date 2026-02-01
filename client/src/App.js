@@ -9,6 +9,8 @@ import AutomationLogs from './components/AutomationLogs';
 import N8NExecutions from './components/N8NExecutions';
 import ProxmoxStatus from './components/ProxmoxStatus';
 import PowerBI from './components/PowerBI';
+import Alerts from './components/Alerts';
+import Assets from './components/Assets';
 import EmployeeSetup from './components/EmployeeSetup';
 import Settings from './components/Settings';
 import Login from './components/Login';
@@ -32,11 +34,13 @@ function App() {
   const DEFAULT_LAYOUT = [
     { i: 'network', x: 0, y: 0, w: 6, h: 4 },
     { i: 'tickets', x: 6, y: 0, w: 6, h: 4 },
-    { i: 'employee-setup', x: 0, y: 4, w: 12, h: 6 },
-    { i: 'logs', x: 0, y: 10, w: 6, h: 4 },
-    { i: 'n8n', x: 6, y: 10, w: 6, h: 4 },
-    { i: 'proxmox', x: 0, y: 14, w: 6, h: 4 },
-    { i: 'powerbi', x: 6, y: 14, w: 6, h: 4 }
+    { i: 'alerts', x: 0, y: 4, w: 6, h: 4 },
+    { i: 'assets', x: 6, y: 4, w: 6, h: 6 },
+    { i: 'employee-setup', x: 0, y: 8, w: 6, h: 6 },
+    { i: 'logs', x: 0, y: 14, w: 6, h: 4 },
+    { i: 'n8n', x: 6, y: 14, w: 6, h: 4 },
+    { i: 'proxmox', x: 0, y: 18, w: 6, h: 4 },
+    { i: 'powerbi', x: 6, y: 18, w: 6, h: 4 }
   ];
 
   const [layout, setLayout] = useState(() => {
@@ -150,6 +154,8 @@ function App() {
   const automationLogs = dashboardData.automationLogs || {};
   const n8nExecutions = dashboardData.n8nExecutions || {};
   const proxmoxStatus = dashboardData.proxmoxStatus || {};
+  const alerts = dashboardData.alerts || {};
+  const assets = dashboardData.assets || {};
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
@@ -212,6 +218,7 @@ function App() {
                 rowHeight={30}
                 isDraggable={true}
                 isResizable={true}
+                draggableCancel="a,button,input,textarea,select,.MuiAccordionSummary-root,.MuiCheckbox-root,.MuiIconButton-root,.MuiChip-root"
               >
                 <div key="network" className="dashboard-widget">
                   <NetworkStatus
@@ -225,6 +232,20 @@ function App() {
                     data={openTickets.items || []}
                     sourceUrl={openTickets.sourceUrl}
                     totalCount={openTickets.totalCount || 0}
+                  />
+                </div>
+                <div key="alerts" className="dashboard-widget">
+                  <Alerts
+                    data={alerts.items || []}
+                    sourceUrl={alerts.sourceUrl}
+                    totalCount={alerts.totalCount || 0}
+                  />
+                </div>
+                <div key="assets" className="dashboard-widget">
+                  <Assets
+                    data={assets.items || []}
+                    sourceUrl={assets.sourceUrl}
+                    totalCount={assets.totalCount || 0}
                   />
                 </div>
                 <div key="employee-setup" className="dashboard-widget">

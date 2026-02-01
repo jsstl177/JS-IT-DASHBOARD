@@ -1,13 +1,14 @@
 const express = require('express');
 const { getNetworkStatus } = require('../services/uptimeKuma');
-const { getOpenTickets, createTicket } = require('../services/superOps');
+const { getOpenTickets, createTicket, getAlerts, getAssets } = require('../services/superOps');
 const { getAutomationLogs } = require('../services/automationLog');
 const { getWorkflowExecutions } = require('../services/n8n');
 const { getProxmoxStatus } = require('../services/proxmox');
 const { getPowerBIEmbedInfo } = require('../services/powerbi');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { decrypt } = require('../utils/crypto');
-const { dbAll } = require('../utils/dbHelpers');
+const { dbAll, dbGet, dbRun } = require('../utils/dbHelpers');
+const { defaultChecklistItems } = require('../utils/checklistData');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -24,6 +25,8 @@ router.get('/data', asyncHandler(async (req, res) => {
     automationLogs: { sourceUrl: null, status: null, items: [] },
     n8nExecutions: { sourceUrl: null, items: [] },
     proxmoxStatus: { sourceUrl: null, items: [] },
+    alerts: { sourceUrl: null, items: [], totalCount: 0 },
+    assets: { sourceUrl: null, items: [], totalCount: 0 },
     powerbiInfo: null,
     employeeSetup: []
   };
@@ -42,10 +45,14 @@ router.get('/data', asyncHandler(async (req, res) => {
           break;
         case 'superops':
           if (setting.base_url && setting.api_key) {
-            results.openTickets = await Promise.race([
-              getOpenTickets(setting.base_url, setting.api_key),
-              timeoutPromise(10000, 'SuperOps timeout')
+            const [tickets, alertData, assetData] = await Promise.all([
+              Promise.race([getOpenTickets(setting.base_url, setting.api_key), timeoutPromise(10000, 'SuperOps tickets timeout')]),
+              Promise.race([getAlerts(setting.base_url, setting.api_key), timeoutPromise(10000, 'SuperOps alerts timeout')]),
+              Promise.race([getAssets(setting.base_url, setting.api_key), timeoutPromise(15000, 'SuperOps assets timeout')])
             ]);
+            results.openTickets = tickets;
+            results.alerts = alertData;
+            results.assets = assetData;
           }
           break;
         case 'automation-log':
@@ -86,6 +93,45 @@ router.get('/data', asyncHandler(async (req, res) => {
   });
 
   await Promise.allSettled(promises);
+
+  // Auto-create employee setup checklists from "New Employee:" tickets
+  try {
+    const tickets = results.openTickets.items || [];
+    for (const ticket of tickets) {
+      if (
+        ticket.title &&
+        ticket.title.includes('New Employee:') &&
+        ticket.requester &&
+        (ticket.requester.toLowerCase().includes('emailapi@powerofjs.com') ||
+         ticket.requester.toLowerCase() === 'email api')
+      ) {
+        const nameMatch = ticket.title.match(/New Employee:\s*(.+)/i);
+        if (nameMatch) {
+          const employeeName = nameMatch[1].trim();
+          const existing = await dbGet(
+            'SELECT id FROM employee_setup_checklist WHERE employee_name = ?',
+            [employeeName]
+          );
+          if (!existing) {
+            const result = await dbRun(
+              'INSERT INTO employee_setup_checklist (employee_name, ticket_id) VALUES (?, ?)',
+              [employeeName, ticket.displayId || ticket.id]
+            );
+            const checklistId = result.lastID;
+            for (const item of defaultChecklistItems) {
+              await dbRun(
+                'INSERT INTO checklist_items (checklist_id, category, item_name, description) VALUES (?, ?, ?, ?)',
+                [checklistId, item.category, item.item_name, item.description]
+              );
+            }
+            logger.info(`Auto-created employee setup checklist for: ${employeeName} (ticket: ${ticket.displayId})`);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn('Error auto-creating employee checklists:', err.message);
+  }
 
   logger.info('Dashboard data fetched successfully');
   res.json(results);

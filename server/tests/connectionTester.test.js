@@ -45,36 +45,51 @@ describe('connectionTester', () => {
 
   // ========== SuperOps ==========
   describe('superops', () => {
-    it('should call GET /api/tickets with Bearer token and return success', async () => {
-      axios.__instance.get.mockResolvedValue({ data: { tickets: [] } });
+    it('should POST GraphQL query to SuperOps API and return success', async () => {
+      axios.post.mockResolvedValue({
+        data: { data: { getStatusList: [{ statusId: '1', name: 'Open' }] } }
+      });
 
       const result = await testServiceConnection('superops', {
-        base_url: 'https://superops.example.com',
+        base_url: 'https://mycompany.superops.ai',
         api_key: 'test-key-123'
       });
 
-      expect(axios.create).toHaveBeenCalledWith(
+      expect(axios.post).toHaveBeenCalledWith(
+        'https://api.superops.ai/msp',
         expect.objectContaining({
-          baseURL: 'https://superops.example.com',
-          timeout: 5000,
+          query: expect.stringContaining('getStatusList')
+        }),
+        expect.objectContaining({
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-key-123'
+            'Authorization': 'Bearer test-key-123',
+            'CustomerSubDomain': 'mycompany',
+            'Content-Type': 'application/json'
           })
         })
       );
-      expect(axios.__instance.get).toHaveBeenCalledWith('/api/tickets', { params: { status: 'open' } });
       expect(result.success).toBe(true);
+      expect(result.message).toContain('mycompany');
     });
 
-    it('should propagate auth errors', async () => {
-      const err = new Error('Request failed with status code 401');
-      err.response = { status: 401 };
-      axios.__instance.get.mockRejectedValue(err);
+    it('should throw on GraphQL errors', async () => {
+      axios.post.mockResolvedValue({
+        data: { errors: [{ message: 'Unauthorized' }] }
+      });
 
       await expect(testServiceConnection('superops', {
-        base_url: 'https://superops.example.com',
+        base_url: 'https://mycompany.superops.ai',
         api_key: 'bad-key'
-      })).rejects.toThrow();
+      })).rejects.toThrow('Unauthorized');
+    });
+
+    it('should propagate network errors', async () => {
+      axios.post.mockRejectedValue(new Error('Network Error'));
+
+      await expect(testServiceConnection('superops', {
+        base_url: 'https://mycompany.superops.ai',
+        api_key: 'test-key'
+      })).rejects.toThrow('Network Error');
     });
   });
 

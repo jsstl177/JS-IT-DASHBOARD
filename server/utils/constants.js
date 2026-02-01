@@ -1,7 +1,8 @@
 const MONITOR_STATUS = {
   DOWN: 0,
   UP: 1,
-  ALERTING: 2
+  PENDING: 2,
+  MAINTENANCE: 3
 };
 
 const CHECKLIST_STATUS = {

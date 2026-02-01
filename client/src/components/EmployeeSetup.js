@@ -1,53 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, CardContent, Typography, List, ListItem,
-  Checkbox, FormControlLabel, Chip, Button, Dialog, DialogTitle,
-  DialogContent, DialogActions, TextField, Grid, Accordion,
+  Checkbox, FormControlLabel, Chip, Button, Grid, Accordion,
   AccordionSummary, AccordionDetails, Box
 } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon, Add as AddIcon } from '@mui/icons-material';
+import { ExpandMore as ExpandMoreIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
 import axios from 'axios';
+
+const NEW_EMPLOYEE_FORM_URL = 'http://192.168.177.233:5678/form/b989d157-c15d-4f42-bbd5-8aecbb954654';
 
 function EmployeeSetup({ data }) {
   const [checklists, setChecklists] = useState([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newEmployee, setNewEmployee] = useState({
-    employee_name: '',
-    employee_email: '',
-    store_number: '',
-    ticket_id: '',
-    department: ''
-  });
 
-  useEffect(() => {
-    fetchChecklists();
-  }, []);
-
-  const fetchChecklists = async () => {
+  const fetchChecklists = useCallback(async () => {
     try {
       const response = await axios.get('/api/employee-setup');
       setChecklists(response.data);
     } catch (error) {
       console.error('Error fetching checklists:', error);
     }
-  };
+  }, []);
 
-  const handleCreateChecklist = async () => {
-    try {
-      await axios.post('/api/employee-setup', newEmployee);
-      setDialogOpen(false);
-      setNewEmployee({
-        employee_name: '',
-        employee_email: '',
-        store_number: '',
-        ticket_id: '',
-        department: ''
-      });
-      fetchChecklists();
-    } catch (error) {
-      console.error('Error creating checklist:', error);
-    }
-  };
+  useEffect(() => {
+    fetchChecklists();
+    const interval = setInterval(fetchChecklists, 30000);
+    return () => clearInterval(interval);
+  }, [fetchChecklists]);
 
   const handleItemStatusChange = async (checklistId, itemId, status) => {
     try {
@@ -94,8 +72,11 @@ function EmployeeSetup({ data }) {
           </Typography>
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setDialogOpen(true)}
+            startIcon={<OpenInNewIcon />}
+            component="a"
+            href={NEW_EMPLOYEE_FORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             size="small"
           >
             New Employee
@@ -137,7 +118,7 @@ function EmployeeSetup({ data }) {
                       {(() => {
                         const groupedItems = groupItemsByCategory(checklist.items || []);
                         return Object.entries(groupedItems).map(([category, items]) => (
-                          <Accordion key={category} size="small">
+                          <Accordion key={category} size="small" onMouseDown={(e) => e.stopPropagation()}>
                             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                               <Box display="flex" alignItems="center" width="100%">
                                 <Typography variant="body2" sx={{ flexGrow: 1 }}>
@@ -202,62 +183,6 @@ function EmployeeSetup({ data }) {
           </Grid>
         )}
 
-        {/* New Employee Dialog */}
-        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Create New Employee Setup Checklist</DialogTitle>
-          <DialogContent>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Employee Name"
-                  value={newEmployee.employee_name}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, employee_name: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Employee Email"
-                  type="email"
-                  value={newEmployee.employee_email}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, employee_email: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Store Number"
-                  value={newEmployee.store_number}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, store_number: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Department"
-                  value={newEmployee.department}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Ticket ID (Optional)"
-                  value={newEmployee.ticket_id}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, ticket_id: e.target.value })}
-                />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateChecklist} variant="contained">
-              Create Checklist
-            </Button>
-          </DialogActions>
-        </Dialog>
       </CardContent>
     </Card>
   );
