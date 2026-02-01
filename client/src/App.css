@@ -104,6 +104,16 @@ main {
   transition: box-shadow 0.2s ease;
 }
 
+/* Allow scrolling for employee setup card */
+.dashboard-widget > .employee-setup-card {
+  overflow: hidden;
+}
+
+.dashboard-widget > .employee-setup-card .MuiCardContent-root {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .dashboard-widget > .MuiCard-root:hover {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
