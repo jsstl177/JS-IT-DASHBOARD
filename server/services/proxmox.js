@@ -35,15 +35,19 @@ async function getProxmoxStatus(baseUrl, username, password, nodeNames = []) {
 
     for (const nodeName of nodesToCheck) {
       try {
-        const nodeStatus = await authAxios.get(`/api2/json/nodes/${nodeName}/status`);
-        const qemuStatus = await authAxios.get(`/api2/json/nodes/${nodeName}/qemu`);
-        const lxcStatus = await authAxios.get(`/api2/json/nodes/${nodeName}/lxc`);
+        const [nodeStatus, qemuStatus, lxcStatus, storageStatus] = await Promise.all([
+          authAxios.get(`/api2/json/nodes/${nodeName}/status`),
+          authAxios.get(`/api2/json/nodes/${nodeName}/qemu`),
+          authAxios.get(`/api2/json/nodes/${nodeName}/lxc`),
+          authAxios.get(`/api2/json/nodes/${nodeName}/storage`),
+        ]);
 
         results.push({
           node: nodeName,
           status: nodeStatus.data.data,
           vms: qemuStatus.data.data || [],
           containers: lxcStatus.data.data || [],
+          storage: storageStatus.data.data || [],
           link: `${baseUrl}#v1:0:=node%2F${nodeName}`
         });
       } catch (nodeError) {

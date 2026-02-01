@@ -134,12 +134,12 @@ describe('Validation Middleware', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    it('should reject proxmox without username/password', () => {
+    it('should reject proxmox without username', () => {
       const { req, res, next } = createMocks({ service: 'proxmox', base_url: 'https://proxmox.local:8006' });
       validateSettings(req, res, next);
       expect(res.statusCode).toBe(400);
       expect(res.jsonData.details).toEqual(expect.arrayContaining([
-        expect.stringContaining('Username and password')
+        expect.stringContaining('Username is required')
       ]));
     });
 

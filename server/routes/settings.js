@@ -90,6 +90,16 @@ router.post('/', authenticateToken, validateSettings, asyncHandler(async (req, r
     [sanitizedService]
   );
 
+  // For NEW settings that require a password, enforce it here (after the DB lookup).
+  // Edits are fine — the existing password is preserved from the DB.
+  const passwordServices = ['proxmox', 'smtp'];
+  if (!existing && passwordServices.includes(sanitizedService) && !password) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: [`Password is required for new ${sanitizedService} configuration`]
+    });
+  }
+
   // For sensitive fields: if the incoming value is empty, keep the existing DB value
   const sanitizedData = {
     service: sanitizedService,

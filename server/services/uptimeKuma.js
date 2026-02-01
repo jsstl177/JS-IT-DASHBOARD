@@ -91,19 +91,27 @@ async function getMonthlyUptime(baseUrl) {
   try {
     const client = axios.create({ baseURL: origin, timeout: 10000 });
 
-    const [statusRes, heartbeatRes] = await Promise.all([
-      client.get(`/api/status-page/${slug}`),
-      client.get(`/api/status-page/heartbeat/${slug}`)
-    ]);
-
+    const statusRes = await client.get(`/api/status-page/${slug}`);
     const groups = statusRes.data.publicGroupList || [];
     const monitors = groups.flatMap(group => group.monitorList || []);
-    const uptimeList = heartbeatRes.data.uptimeList || {};
 
-    const items = monitors.map(monitor => ({
+    // Fetch 30-day uptime per monitor via the badge API (no auth required)
+    const uptimeResults = await Promise.all(
+      monitors.map(async (monitor) => {
+        try {
+          const res = await client.get(`/api/badge/${monitor.id}/uptime/720`, { timeout: 5000, responseType: 'text' });
+          const match = res.data.match(/>(\d+(?:\.\d+)?)%</);
+          return match ? parseFloat(match[1]) / 100 : null;
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const items = monitors.map((monitor, idx) => ({
       id: monitor.id,
       name: monitor.name,
-      uptime: uptimeList[`${monitor.id}_720`] ?? null
+      uptime: uptimeResults[idx]
     }));
 
     return {

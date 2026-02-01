@@ -45,8 +45,8 @@ const validateSettings = (req, res, next) => {
         if (!base_url || !isValidUrl(base_url)) {
           errors.push('Valid base URL is required for Proxmox');
         }
-        if (!req.body.username || !req.body.password) {
-          errors.push('Username and password are required for Proxmox');
+        if (!req.body.username) {
+          errors.push('Username is required for Proxmox');
         }
         break;
       case 'powerbi':
@@ -63,9 +63,6 @@ const validateSettings = (req, res, next) => {
         }
         if (!req.body.username) {
           errors.push('SMTP username/sender email is required');
-        }
-        if (!req.body.password) {
-          errors.push('SMTP password is required');
         }
         break;
       default:

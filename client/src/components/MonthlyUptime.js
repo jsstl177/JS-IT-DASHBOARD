@@ -16,9 +16,19 @@ function formatUptime(uptime) {
   return (uptime * 100).toFixed(2) + '%';
 }
 
+function isPriority(name) {
+  const upper = name.toUpperCase();
+  return upper.includes('WAN') || upper.includes('AT&T');
+}
+
 function sortItems(items, savedOrder) {
   if (!savedOrder || savedOrder.length === 0) {
-    return [...items].sort((a, b) => a.name.localeCompare(b.name));
+    return [...items].sort((a, b) => {
+      const aPri = isPriority(a.name);
+      const bPri = isPriority(b.name);
+      if (aPri !== bPri) return aPri ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
   }
 
   const orderMap = new Map(savedOrder.map((id, idx) => [id, idx]));
@@ -26,6 +36,9 @@ function sortItems(items, savedOrder) {
     const aIdx = orderMap.has(a.id) ? orderMap.get(a.id) : Infinity;
     const bIdx = orderMap.has(b.id) ? orderMap.get(b.id) : Infinity;
     if (aIdx !== bIdx) return aIdx - bIdx;
+    const aPri = isPriority(a.name);
+    const bPri = isPriority(b.name);
+    if (aPri !== bPri) return aPri ? -1 : 1;
     return a.name.localeCompare(b.name);
   });
 }
