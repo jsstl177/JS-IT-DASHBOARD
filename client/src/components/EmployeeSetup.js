@@ -53,14 +53,47 @@ function EmployeeSetup({ data }) {
     }
   };
 
+  // Define the desired category order
+  const categoryOrder = [
+    'Domain',
+    'Outlook Email',
+    'M365',
+    'Dashlane',
+    'INFORM',
+    'JEN',
+    'JU ONLINE',
+    'Additional Setup',
+    'Salto\'s',
+    'CDA Alarm',
+    'UPG Navigator',
+    'MITS'
+  ];
+
   const groupItemsByCategory = (items) => {
-    return items.reduce((acc, item) => {
+    const grouped = items.reduce((acc, item) => {
       if (!acc[item.category]) {
         acc[item.category] = [];
       }
       acc[item.category].push(item);
       return acc;
     }, {});
+
+    // Sort categories according to the defined order
+    const sortedGrouped = {};
+    categoryOrder.forEach(category => {
+      if (grouped[category]) {
+        sortedGrouped[category] = grouped[category];
+      }
+    });
+
+    // Add any categories not in the predefined order
+    Object.keys(grouped).forEach(category => {
+      if (!sortedGrouped[category]) {
+        sortedGrouped[category] = grouped[category];
+      }
+    });
+
+    return sortedGrouped;
   };
 
   return (
@@ -88,10 +121,18 @@ function EmployeeSetup({ data }) {
             No employee setup checklists
           </Typography>
         ) : (
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 2 }}>
             {checklists.map((checklist) => (
-              <Grid item xs={12} md={6} lg={4} key={checklist.id}>
-                <Card variant="outlined">
+              <Card 
+                variant="outlined" 
+                key={checklist.id}
+                sx={{ 
+                  height: 'fit-content',
+                  cursor: 'default'
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
                   <CardContent>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                       <Typography variant="h6" component="h3">
@@ -118,8 +159,17 @@ function EmployeeSetup({ data }) {
                       {(() => {
                         const groupedItems = groupItemsByCategory(checklist.items || []);
                         return Object.entries(groupedItems).map(([category, items]) => (
-                          <Accordion key={category} size="small" onMouseDown={(e) => e.stopPropagation()}>
-                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                          <Accordion 
+                            key={category} 
+                            size="small" 
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <AccordionSummary 
+                              expandIcon={<ExpandMoreIcon />}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <Box display="flex" alignItems="center" width="100%">
                                 <Typography variant="body2" sx={{ flexGrow: 1 }}>
                                   {category}
@@ -177,8 +227,7 @@ function EmployeeSetup({ data }) {
                       })()}
                     </Box>
                   </CardContent>
-                </Card>
-              </Grid>
+              </Card>
             ))}
           </Grid>
         )}
