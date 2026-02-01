@@ -3,10 +3,10 @@ process.env.ENCRYPTION_KEY = 'test-encryption-key-for-unit-tests';
 process.env.JWT_SECRET = 'test-jwt-secret-that-is-long-enough';
 
 // Mock dependencies before requiring modules
-jest.mock('../db', () => ({
-  get: jest.fn(),
-  all: jest.fn(),
-  run: jest.fn()
+jest.mock('../utils/dbHelpers', () => ({
+  dbGet: jest.fn(),
+  dbAll: jest.fn(),
+  dbRun: jest.fn()
 }));
 jest.mock('../utils/logger', () => ({
   info: jest.fn(),
@@ -17,7 +17,7 @@ jest.mock('../utils/logger', () => ({
 
 const request = require('supertest');
 const express = require('express');
-const db = require('../db');
+const { dbGet, dbAll, dbRun } = require('../utils/dbHelpers');
 const employeeSetupRoutes = require('../routes/employeeSetup');
 
 // Build Express app for testing
@@ -68,9 +68,12 @@ describe('Employee Setup Routes', () => {
         { ...mockChecklist, id: 2, employee_name: 'Jane Smith' }
       ];
 
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, mockChecklists);
-      });
+      // First call: dbAll for checklists list query
+      // Subsequent calls: dbAll for items per checklist
+      dbAll
+        .mockResolvedValueOnce(mockChecklists)
+        .mockResolvedValueOnce([...mockItems])
+        .mockResolvedValueOnce([...mockItems]);
 
       const response = await request(app)
         .get('/api/employee-setup/');
@@ -83,9 +86,7 @@ describe('Employee Setup Routes', () => {
     });
 
     it('should return empty array when no checklists exist', async () => {
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, []);
-      });
+      dbAll.mockResolvedValue([]);
 
       const response = await request(app)
         .get('/api/employee-setup/');
@@ -98,30 +99,15 @@ describe('Employee Setup Routes', () => {
   // ========== POST / ==========
   describe('POST /api/employee-setup/', () => {
     it('should create a new checklist with valid data (returns 201)', async () => {
-      // First call: INSERT checklist -> returns lastID
-      // Subsequent calls: INSERT checklist items
-      // Then: getChecklistById calls db.get and db.all
-      let runCallCount = 0;
-      db.run.mockImplementation(function (query, params, callback) {
-        runCallCount++;
-        // First call is the checklist insert
-        if (runCallCount === 1) {
-          callback.call({ lastID: 1, changes: 1 }, null);
-        } else {
-          // Subsequent calls are item inserts
-          callback.call({ lastID: runCallCount, changes: 1 }, null);
-        }
-      });
+      // dbRun for INSERT checklist -> returns lastID
+      // Subsequent dbRun calls for item inserts
+      dbRun.mockResolvedValue({ lastID: 1, changes: 1 });
 
-      // db.get for getChecklistById
-      db.get.mockImplementation((query, params, callback) => {
-        callback(null, { ...mockChecklist });
-      });
+      // dbGet for getChecklistById
+      dbGet.mockResolvedValue({ ...mockChecklist });
 
-      // db.all for getChecklistById items
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [...mockItems]);
-      });
+      // dbAll for getChecklistById items
+      dbAll.mockResolvedValue([...mockItems]);
 
       const response = await request(app)
         .post('/api/employee-setup/')
@@ -183,13 +169,8 @@ describe('Employee Setup Routes', () => {
   // ========== GET /:id ==========
   describe('GET /api/employee-setup/:id', () => {
     it('should return a specific checklist with items', async () => {
-      db.get.mockImplementation((query, params, callback) => {
-        callback(null, { ...mockChecklist });
-      });
-
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [...mockItems]);
-      });
+      dbGet.mockResolvedValue({ ...mockChecklist });
+      dbAll.mockResolvedValue([...mockItems]);
 
       const response = await request(app)
         .get('/api/employee-setup/1');
@@ -202,9 +183,7 @@ describe('Employee Setup Routes', () => {
     });
 
     it('should return 404 for nonexistent checklist', async () => {
-      db.get.mockImplementation((query, params, callback) => {
-        callback(null, null);
-      });
+      dbGet.mockResolvedValue(null);
 
       const response = await request(app)
         .get('/api/employee-setup/999');
@@ -217,24 +196,18 @@ describe('Employee Setup Routes', () => {
   // ========== PATCH /:checklistId/items/:itemId ==========
   describe('PATCH /api/employee-setup/:checklistId/items/:itemId', () => {
     it('should update item status with valid status', async () => {
-      // db.run for UPDATE calls
-      db.run.mockImplementation(function (query, params, callback) {
-        callback.call({ changes: 1 }, null);
-      });
+      // dbRun for UPDATE calls
+      dbRun.mockResolvedValue({ changes: 1 });
 
-      // db.get for getChecklistById
-      db.get.mockImplementation((query, params, callback) => {
-        callback(null, { ...mockChecklist, status: 'in_progress' });
-      });
+      // dbGet for getChecklistById
+      dbGet.mockResolvedValue({ ...mockChecklist, status: 'in_progress' });
 
-      // db.all for getChecklistById items
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [
-          { ...mockItems[0], status: 'completed' },
-          { ...mockItems[1], status: 'pending' },
-          { ...mockItems[2], status: 'pending' }
-        ]);
-      });
+      // dbAll for getChecklistById items
+      dbAll.mockResolvedValue([
+        { ...mockItems[0], status: 'completed' },
+        { ...mockItems[1], status: 'pending' },
+        { ...mockItems[2], status: 'pending' }
+      ]);
 
       const response = await request(app)
         .patch('/api/employee-setup/1/items/1')
@@ -255,17 +228,9 @@ describe('Employee Setup Routes', () => {
     });
 
     it('should accept "pending" status', async () => {
-      db.run.mockImplementation(function (query, params, callback) {
-        callback.call({ changes: 1 }, null);
-      });
-
-      db.get.mockImplementation((query, params, callback) => {
-        callback(null, { ...mockChecklist });
-      });
-
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [...mockItems]);
-      });
+      dbRun.mockResolvedValue({ changes: 1 });
+      dbGet.mockResolvedValue({ ...mockChecklist });
+      dbAll.mockResolvedValue([...mockItems]);
 
       const response = await request(app)
         .patch('/api/employee-setup/1/items/1')
@@ -275,21 +240,13 @@ describe('Employee Setup Routes', () => {
     });
 
     it('should accept "na" status', async () => {
-      db.run.mockImplementation(function (query, params, callback) {
-        callback.call({ changes: 1 }, null);
-      });
-
-      db.get.mockImplementation((query, params, callback) => {
-        callback(null, { ...mockChecklist });
-      });
-
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [
-          { ...mockItems[0], status: 'na' },
-          { ...mockItems[1], status: 'pending' },
-          { ...mockItems[2], status: 'pending' }
-        ]);
-      });
+      dbRun.mockResolvedValue({ changes: 1 });
+      dbGet.mockResolvedValue({ ...mockChecklist });
+      dbAll.mockResolvedValue([
+        { ...mockItems[0], status: 'na' },
+        { ...mockItems[1], status: 'pending' },
+        { ...mockItems[2], status: 'pending' }
+      ]);
 
       const response = await request(app)
         .patch('/api/employee-setup/1/items/1')
@@ -299,36 +256,26 @@ describe('Employee Setup Routes', () => {
     });
 
     it('should auto-complete checklist when all items are completed or na', async () => {
-      db.run.mockImplementation(function (query, params, callback) {
-        callback.call({ changes: 1 }, null);
-      });
+      dbRun.mockResolvedValue({ changes: 1 });
 
-      // getChecklistById: first call returns non-completed checklist, second returns completed
-      let getCallCount = 0;
-      db.get.mockImplementation((query, params, callback) => {
-        getCallCount++;
-        if (getCallCount === 1) {
-          callback(null, { ...mockChecklist, status: 'in_progress' });
-        } else {
-          callback(null, { ...mockChecklist, status: 'completed' });
-        }
-      });
+      // getChecklistById: first call returns non-completed, second returns completed
+      dbGet
+        .mockResolvedValueOnce({ ...mockChecklist, status: 'in_progress' })
+        .mockResolvedValueOnce({ ...mockChecklist, status: 'completed' });
 
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [
-          { ...mockItems[0], status: 'completed' },
-          { ...mockItems[1], status: 'completed' },
-          { ...mockItems[2], status: 'na' }
-        ]);
-      });
+      dbAll.mockResolvedValue([
+        { ...mockItems[0], status: 'completed' },
+        { ...mockItems[1], status: 'completed' },
+        { ...mockItems[2], status: 'na' }
+      ]);
 
       const response = await request(app)
         .patch('/api/employee-setup/1/items/3')
         .send({ status: 'na' });
 
       expect(response.status).toBe(200);
-      // Verify that db.run was called to update checklist status to 'completed'
-      const runCalls = db.run.mock.calls;
+      // Verify that dbRun was called to update checklist status to 'completed'
+      const runCalls = dbRun.mock.calls;
       const statusUpdateCall = runCalls.find(call =>
         call[0].includes('employee_setup_checklist') &&
         call[0].includes('status') &&
@@ -341,22 +288,18 @@ describe('Employee Setup Routes', () => {
   // ========== DELETE /:id ==========
   describe('DELETE /api/employee-setup/:id', () => {
     it('should delete a checklist', async () => {
-      db.run.mockImplementation(function (query, params, callback) {
-        callback.call({ changes: 1 }, null);
-      });
+      dbRun.mockResolvedValue({ changes: 1 });
 
       const response = await request(app)
         .delete('/api/employee-setup/1');
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Checklist deleted successfully');
-      expect(db.run).toHaveBeenCalled();
+      expect(dbRun).toHaveBeenCalled();
     });
 
     it('should return 200 even for nonexistent checklist (idempotent delete)', async () => {
-      db.run.mockImplementation(function (query, params, callback) {
-        callback.call({ changes: 0 }, null);
-      });
+      dbRun.mockResolvedValue({ changes: 0 });
 
       const response = await request(app)
         .delete('/api/employee-setup/999');

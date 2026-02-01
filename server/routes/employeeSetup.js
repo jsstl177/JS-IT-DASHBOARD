@@ -42,7 +42,7 @@ router.post('/', validateEmployeeSetup, asyncHandler(async (req, res) => {
   const result = await dbRun(`
     INSERT INTO employee_setup_checklist (employee_name, employee_email, store_number, ticket_id, department)
     VALUES (?, ?, ?, ?, ?)
-  `, [employee_name, employee_email, store_number, ticket_id, department]);
+  `, [employee_name, employee_email || null, store_number || null, ticket_id || null, department || null]);
 
   const checklistId = result.lastID;
 
@@ -86,7 +86,7 @@ router.patch('/:checklistId/items/:itemId', asyncHandler(async (req, res) => {
     UPDATE checklist_items
     SET status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `, [status, notes, itemId]);
+  `, [status || null, notes || null, itemId]);
 
   await dbRun(`
     UPDATE employee_setup_checklist

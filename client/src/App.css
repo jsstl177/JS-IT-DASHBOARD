@@ -155,6 +155,18 @@ main {
   border-bottom: 2px solid rgba(0, 0, 0, 0.3);
 }
 
+/* Tab empty state */
+.tab-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 8px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .app-header {

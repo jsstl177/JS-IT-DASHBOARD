@@ -82,14 +82,22 @@ router.get('/', authenticateToken, asyncHandler(async (req, res) => {
 router.post('/', authenticateToken, validateSettings, asyncHandler(async (req, res) => {
   const { service, api_key, api_secret, base_url, username, password } = req.body;
 
-  // Sanitize inputs
+  const sanitizedService = sanitizeInput(service);
+
+  // Check if this service already exists so we can preserve blank sensitive fields
+  const existing = await dbGet(
+    'SELECT api_key, api_secret, password FROM settings WHERE service = ?',
+    [sanitizedService]
+  );
+
+  // For sensitive fields: if the incoming value is empty, keep the existing DB value
   const sanitizedData = {
-    service: sanitizeInput(service),
-    api_key: encrypt(sanitizeInput(api_key)),
-    api_secret: encrypt(sanitizeInput(api_secret)),
+    service: sanitizedService,
+    api_key: api_key ? encrypt(sanitizeInput(api_key)) : (existing?.api_key || encrypt('')),
+    api_secret: api_secret ? encrypt(sanitizeInput(api_secret)) : (existing?.api_secret || encrypt('')),
     base_url: sanitizeInput(base_url),
     username: sanitizeInput(username),
-    password: encrypt(password) // Encrypt password at rest
+    password: password ? encrypt(password) : (existing?.password || encrypt('')),
   };
 
   const query = `

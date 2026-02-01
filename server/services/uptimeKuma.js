@@ -85,4 +85,35 @@ async function getNetworkStatus(baseUrl) {
   }
 }
 
-module.exports = { getNetworkStatus, parseUptimeKumaUrl };
+async function getMonthlyUptime(baseUrl) {
+  const { origin, slug } = parseUptimeKumaUrl(baseUrl);
+
+  try {
+    const client = axios.create({ baseURL: origin, timeout: 10000 });
+
+    const [statusRes, heartbeatRes] = await Promise.all([
+      client.get(`/api/status-page/${slug}`),
+      client.get(`/api/status-page/heartbeat/${slug}`)
+    ]);
+
+    const groups = statusRes.data.publicGroupList || [];
+    const monitors = groups.flatMap(group => group.monitorList || []);
+    const uptimeList = heartbeatRes.data.uptimeList || {};
+
+    const items = monitors.map(monitor => ({
+      id: monitor.id,
+      name: monitor.name,
+      uptime: uptimeList[`${monitor.id}_720`] ?? null
+    }));
+
+    return {
+      sourceUrl: `${origin}/status/${slug}`,
+      items
+    };
+  } catch (error) {
+    logger.error('Uptime Kuma monthly uptime API error', { service: 'uptime-kuma', error: error.message });
+    return { sourceUrl: origin, items: [] };
+  }
+}
+
+module.exports = { getNetworkStatus, getMonthlyUptime, parseUptimeKumaUrl };

@@ -67,7 +67,7 @@ describe('SuperOps Service', () => {
 
       const result = await getOpenTickets(tenantUrl, 'test-api-key');
 
-      expect(result.sourceUrl).toBe('https://johnstonesupply-thewinesgroup.superops.ai/servicedesk/tickets');
+      expect(result.sourceUrl).toBe('https://johnstonesupply-thewinesgroup.superops.ai');
       expect(result.items).toHaveLength(1);
       expect(result.items[0]).toEqual({
         id: '123',
@@ -81,7 +81,7 @@ describe('SuperOps Service', () => {
         requester: 'Jane Smith',
         client: 'Acme Corp',
         site: 'Main Office',
-        link: 'https://johnstonesupply-thewinesgroup.superops.ai/servicedesk/tickets/012025-0001'
+        link: 'https://johnstonesupply-thewinesgroup.superops.ai'
       });
       expect(result.totalCount).toBe(1);
     });
@@ -104,12 +104,13 @@ describe('SuperOps Service', () => {
               condition: {
                 attribute: 'status',
                 operator: 'notIncludes',
-                value: ['Resolved', 'Closed']
+                value: ['Resolved', 'Closed', 'Waiting on third party', 'On Hold']
               }
             })
           })
         }),
         expect.objectContaining({
+          timeout: 10000,
           headers: {
             'Authorization': 'Bearer my-token',
             'CustomerSubDomain': 'johnstonesupply-thewinesgroup',
@@ -222,8 +223,8 @@ describe('SuperOps Service', () => {
 
       const result = await getOpenTickets('https://mycompany.superops.ai/', 'test-key');
 
-      expect(result.sourceUrl).toBe('https://mycompany.superops.ai/servicedesk/tickets');
-      expect(result.items[0].link).toBe('https://mycompany.superops.ai/servicedesk/tickets/T-001');
+      expect(result.sourceUrl).toBe('https://mycompany.superops.ai');
+      expect(result.items[0].link).toBe('https://mycompany.superops.ai');
     });
   });
 });

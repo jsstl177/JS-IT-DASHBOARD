@@ -32,6 +32,19 @@ function formatTime(dateStr) {
   }
 }
 
+function hasRecentActivity(ticket) {
+  const ts = ticket.updatedTime || ticket.createdTime;
+  if (!ts) return false;
+  const updated = new Date(ts);
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  return updated.getTime() > cutoff;
+}
+
+const ACTIVITY_COLORS = {
+  stale: '#F44336',  // red — no note / new without activity in 24h
+  active: '#4CAF50', // green — note within last 24h
+};
+
 function OpenTickets({ data, sourceUrl, totalCount }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [customer, setCustomer] = useState('');
@@ -121,6 +134,8 @@ function OpenTickets({ data, sourceUrl, totalCount }) {
             <List dense disablePadding>
               {[...data].sort((a, b) => new Date(b.createdTime || 0) - new Date(a.createdTime || 0)).map((ticket) => {
                 const pStyle = getPriorityStyle(ticket.priority);
+                const recent = hasRecentActivity(ticket);
+                const activityColor = recent ? ACTIVITY_COLORS.active : ACTIVITY_COLORS.stale;
                 return (
                   <ListItem
                     key={ticket.id || ticket.displayId}
@@ -129,7 +144,7 @@ function OpenTickets({ data, sourceUrl, totalCount }) {
                     target={ticket.link ? '_blank' : undefined}
                     rel={ticket.link ? 'noopener noreferrer' : undefined}
                     sx={{
-                      borderLeft: `4px solid ${pStyle.color}`,
+                      borderLeft: `4px solid ${activityColor}`,
                       mb: 0.5,
                       borderRadius: 1,
                       bgcolor: 'action.hover',
@@ -143,7 +158,7 @@ function OpenTickets({ data, sourceUrl, totalCount }) {
                     }}
                   >
                     <ListItemIcon sx={{ minWidth: 32 }}>
-                      <ConfirmationNumberIcon sx={{ fontSize: 18, color: pStyle.color }} />
+                      <ConfirmationNumberIcon sx={{ fontSize: 18, color: activityColor }} />
                     </ListItemIcon>
                     <ListItemText
                       primary={

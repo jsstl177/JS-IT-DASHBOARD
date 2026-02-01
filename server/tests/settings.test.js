@@ -4,10 +4,10 @@ process.env.ENCRYPTION_KEY = 'test-encryption-key-for-unit-tests';
 process.env.DEFAULT_ADMIN_PASSWORD = 'testpassword';
 
 // Mock dependencies before requiring modules
-jest.mock('../db', () => ({
-  get: jest.fn(),
-  all: jest.fn(),
-  run: jest.fn()
+jest.mock('../utils/dbHelpers', () => ({
+  dbGet: jest.fn(),
+  dbAll: jest.fn(),
+  dbRun: jest.fn()
 }));
 jest.mock('../utils/logger', () => ({
   info: jest.fn(),
@@ -24,7 +24,7 @@ const request = require('supertest');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('../db');
+const { dbGet, dbAll, dbRun } = require('../utils/dbHelpers');
 const settingsRoutes = require('../routes/settings');
 
 // Build Express app for testing
@@ -56,9 +56,7 @@ describe('Settings Routes', () => {
     it('should return a token with valid credentials', async () => {
       const hashedPassword = await bcrypt.hash('testpassword', 10);
 
-      db.get.mockImplementation((query, params, callback) => {
-        callback(null, { id: 1, username: 'admin', password_hash: hashedPassword });
-      });
+      dbGet.mockResolvedValue({ id: 1, username: 'admin', password_hash: hashedPassword });
 
       const response = await request(app)
         .post('/api/settings/login')
@@ -74,9 +72,7 @@ describe('Settings Routes', () => {
     it('should return 401 with invalid password', async () => {
       const hashedPassword = await bcrypt.hash('correctpassword', 10);
 
-      db.get.mockImplementation((query, params, callback) => {
-        callback(null, { id: 1, username: 'admin', password_hash: hashedPassword });
-      });
+      dbGet.mockResolvedValue({ id: 1, username: 'admin', password_hash: hashedPassword });
 
       const response = await request(app)
         .post('/api/settings/login')
@@ -87,9 +83,7 @@ describe('Settings Routes', () => {
     });
 
     it('should return 401 when user is not found', async () => {
-      db.get.mockImplementation((query, params, callback) => {
-        callback(null, null);
-      });
+      dbGet.mockResolvedValue(null);
 
       const response = await request(app)
         .post('/api/settings/login')
@@ -153,9 +147,7 @@ describe('Settings Routes', () => {
         { service: 'superops', api_key: 'plain-key', api_secret: null, base_url: 'https://superops.com', username: null }
       ];
 
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, mockSettings);
-      });
+      dbAll.mockResolvedValue(mockSettings);
 
       const response = await request(app)
         .get('/api/settings/')
@@ -170,9 +162,7 @@ describe('Settings Routes', () => {
     it('should return empty array when no settings exist', async () => {
       const token = generateToken();
 
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, []);
-      });
+      dbAll.mockResolvedValue([]);
 
       const response = await request(app)
         .get('/api/settings/')
@@ -205,9 +195,7 @@ describe('Settings Routes', () => {
     it('should save settings with valid token and data', async () => {
       const token = generateToken();
 
-      db.run.mockImplementation(function (query, params, callback) {
-        callback.call({ lastID: 1, changes: 1 }, null);
-      });
+      dbRun.mockResolvedValue({ lastID: 1, changes: 1 });
 
       const response = await request(app)
         .post('/api/settings/')
@@ -219,7 +207,7 @@ describe('Settings Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Setting updated successfully');
-      expect(db.run).toHaveBeenCalled();
+      expect(dbRun).toHaveBeenCalled();
     });
 
     it('should return 401 without token', async () => {
@@ -258,9 +246,7 @@ describe('Settings Routes', () => {
     it('should encrypt sensitive fields before saving', async () => {
       const token = generateToken();
 
-      db.run.mockImplementation(function (query, params, callback) {
-        callback.call({ lastID: 1, changes: 1 }, null);
-      });
+      dbRun.mockResolvedValue({ lastID: 1, changes: 1 });
 
       await request(app)
         .post('/api/settings/')
@@ -271,8 +257,8 @@ describe('Settings Routes', () => {
           api_key: 'my-secret-api-key'
         });
 
-      // Verify db.run was called with encrypted api_key (should contain colons from encryption format)
-      const callParams = db.run.mock.calls[0][1];
+      // Verify dbRun was called with encrypted api_key (should contain colons from encryption format)
+      const callParams = dbRun.mock.calls[0][1];
       // The api_key param (index 1) should be encrypted (contain colons)
       expect(callParams[1]).toContain(':');
     });
@@ -283,9 +269,7 @@ describe('Settings Routes', () => {
     it('should delete setting with valid token', async () => {
       const token = generateToken();
 
-      db.run.mockImplementation(function (query, params, callback) {
-        callback.call({ changes: 1 }, null);
-      });
+      dbRun.mockResolvedValue({ changes: 1 });
 
       const response = await request(app)
         .delete('/api/settings/uptime-kuma')
@@ -293,7 +277,7 @@ describe('Settings Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Setting deleted successfully');
-      expect(db.run).toHaveBeenCalled();
+      expect(dbRun).toHaveBeenCalled();
     });
 
     it('should return 401 without token', async () => {

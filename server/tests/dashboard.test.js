@@ -3,10 +3,10 @@ process.env.ENCRYPTION_KEY = 'test-encryption-key-for-unit-tests';
 process.env.JWT_SECRET = 'test-jwt-secret-that-is-long-enough';
 
 // Mock all dependencies before requiring modules
-jest.mock('../db', () => ({
-  get: jest.fn(),
-  all: jest.fn(),
-  run: jest.fn()
+jest.mock('../utils/dbHelpers', () => ({
+  dbGet: jest.fn(),
+  dbAll: jest.fn(),
+  dbRun: jest.fn()
 }));
 jest.mock('../services/uptimeKuma');
 jest.mock('../services/superOps');
@@ -25,7 +25,7 @@ jest.mock('../utils/logger', () => ({
 const request = require('supertest');
 const express = require('express');
 const dashboardRoutes = require('../routes/dashboard');
-const db = require('../db');
+const { dbGet, dbAll, dbRun } = require('../utils/dbHelpers');
 const { getNetworkStatus } = require('../services/uptimeKuma');
 const { getOpenTickets } = require('../services/superOps');
 const { getAutomationLogs } = require('../services/automationLog');
@@ -50,10 +50,8 @@ describe('Dashboard Routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Default mock: db.all with 3-arg callback pattern (query, params, callback)
-    db.all.mockImplementation((query, params, callback) => {
-      callback(null, []);
-    });
+    // Default mock: dbAll returns empty settings array
+    dbAll.mockResolvedValue([]);
 
     // Default mocks for all services - return { sourceUrl, items } format
     getNetworkStatus.mockResolvedValue({ sourceUrl: null, items: [] });
@@ -87,11 +85,9 @@ describe('Dashboard Routes', () => {
 
     it('should return data from configured services', async () => {
       // Mock settings with uptime-kuma configured
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [
-          { service: 'uptime-kuma', base_url: 'http://uptime.local', api_key: null, api_secret: null, password: null }
-        ]);
-      });
+      dbAll.mockResolvedValue([
+        { service: 'uptime-kuma', base_url: 'http://uptime.local', api_key: null, api_secret: null, password: null }
+      ]);
 
       getNetworkStatus.mockResolvedValue({
         sourceUrl: 'http://uptime.local/status/everything',
@@ -110,11 +106,9 @@ describe('Dashboard Routes', () => {
     });
 
     it('should handle service errors gracefully', async () => {
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [
-          { service: 'uptime-kuma', base_url: 'http://uptime.local', api_key: null, api_secret: null, password: null }
-        ]);
-      });
+      dbAll.mockResolvedValue([
+        { service: 'uptime-kuma', base_url: 'http://uptime.local', api_key: null, api_secret: null, password: null }
+      ]);
 
       getNetworkStatus.mockRejectedValue(new Error('Service unavailable'));
 
@@ -128,9 +122,7 @@ describe('Dashboard Routes', () => {
     });
 
     it('should handle database errors', async () => {
-      db.all.mockImplementation((query, params, callback) => {
-        callback(new Error('Database connection failed'));
-      });
+      dbAll.mockRejectedValue(new Error('Database connection failed'));
 
       const response = await request(app)
         .get('/api/dashboard/data');
@@ -140,12 +132,10 @@ describe('Dashboard Routes', () => {
     });
 
     it('should call services with correct parameters', async () => {
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [
-          { service: 'superops', base_url: 'https://superops.com', api_key: 'key123', api_secret: null, password: null },
-          { service: 'n8n', base_url: 'https://n8n.local', api_key: 'n8nkey', api_secret: null, password: null }
-        ]);
-      });
+      dbAll.mockResolvedValue([
+        { service: 'superops', base_url: 'https://superops.com', api_key: 'key123', api_secret: null, password: null },
+        { service: 'n8n', base_url: 'https://n8n.local', api_key: 'n8nkey', api_secret: null, password: null }
+      ]);
 
       getOpenTickets.mockResolvedValue({ sourceUrl: 'https://superops.com/ticket', items: [] });
       getWorkflowExecutions.mockResolvedValue({ sourceUrl: 'https://n8n.local', items: [] });
@@ -159,18 +149,16 @@ describe('Dashboard Routes', () => {
     });
 
     it('should call proxmox with correct parameters including node names', async () => {
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [
-          {
-            service: 'proxmox',
-            base_url: 'https://proxmox.local:8006',
-            api_key: 'node1,node2',
-            api_secret: null,
-            username: 'root@pam',
-            password: 'secret'
-          }
-        ]);
-      });
+      dbAll.mockResolvedValue([
+        {
+          service: 'proxmox',
+          base_url: 'https://proxmox.local:8006',
+          api_key: 'node1,node2',
+          api_secret: null,
+          username: 'root@pam',
+          password: 'secret'
+        }
+      ]);
 
       getProxmoxStatus.mockResolvedValue({ sourceUrl: 'https://proxmox.local:8006', items: [] });
 
@@ -187,11 +175,9 @@ describe('Dashboard Routes', () => {
     });
 
     it('should handle Power BI embed info', async () => {
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [
-          { service: 'powerbi', base_url: 'https://app.powerbi.com/reports/abc-123', api_key: null, api_secret: null, password: null }
-        ]);
-      });
+      dbAll.mockResolvedValue([
+        { service: 'powerbi', base_url: 'https://app.powerbi.com/reports/abc-123', api_key: null, api_secret: null, password: null }
+      ]);
 
       getPowerBIEmbedInfo.mockReturnValue({
         embedUrl: 'https://app.powerbi.com/reports/abc-123',
@@ -209,11 +195,9 @@ describe('Dashboard Routes', () => {
     });
 
     it('should handle timeout scenario (service takes too long)', async () => {
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [
-          { service: 'uptime-kuma', base_url: 'http://uptime.local', api_key: null, api_secret: null, password: null }
-        ]);
-      });
+      dbAll.mockResolvedValue([
+        { service: 'uptime-kuma', base_url: 'http://uptime.local', api_key: null, api_secret: null, password: null }
+      ]);
 
       // Simulate a service that rejects due to timeout
       getNetworkStatus.mockRejectedValue(new Error('Uptime Kuma timeout'));
@@ -227,9 +211,7 @@ describe('Dashboard Routes', () => {
     });
 
     it('should not call services when no settings are configured', async () => {
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, []);
-      });
+      dbAll.mockResolvedValue([]);
 
       await request(app)
         .get('/api/dashboard/data')
@@ -243,14 +225,12 @@ describe('Dashboard Routes', () => {
     });
 
     it('should skip services that lack required settings', async () => {
-      db.all.mockImplementation((query, params, callback) => {
-        callback(null, [
-          // superops without api_key should be skipped
-          { service: 'superops', base_url: 'https://superops.com', api_key: null, api_secret: null, password: null },
-          // n8n without base_url should be skipped
-          { service: 'n8n', base_url: null, api_key: 'key', api_secret: null, password: null }
-        ]);
-      });
+      dbAll.mockResolvedValue([
+        // superops without api_key should be skipped
+        { service: 'superops', base_url: 'https://superops.com', api_key: null, api_secret: null, password: null },
+        // n8n without base_url should be skipped
+        { service: 'n8n', base_url: null, api_key: 'key', api_secret: null, password: null }
+      ]);
 
       await request(app)
         .get('/api/dashboard/data')

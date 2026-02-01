@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline, Snackbar, Alert } from '@mui/material';
+import { CssBaseline, Snackbar, Alert, Box, Typography } from '@mui/material';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import axios from 'axios';
 import NetworkStatus from './components/NetworkStatus';
+import MonthlyUptime from './components/MonthlyUptime';
 import OpenTickets from './components/OpenTickets';
 import AutomationLogs from './components/AutomationLogs';
 import N8NExecutions from './components/N8NExecutions';
@@ -16,6 +17,8 @@ import Settings from './components/Settings';
 import Login from './components/Login';
 import ThemeSelector from './components/ThemeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
+import TabBar from './components/TabBar';
+import { useDashboardTabs, MODULE_DISPLAY_NAMES } from './hooks/useDashboardTabs';
 import { themes } from './themes';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -31,28 +34,20 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('theme') || 'light');
-  const DEFAULT_LAYOUT = [
-    { i: 'network', x: 0, y: 0, w: 6, h: 4 },
-    { i: 'tickets', x: 6, y: 0, w: 6, h: 4 },
-    { i: 'alerts', x: 0, y: 4, w: 6, h: 4 },
-    { i: 'assets', x: 6, y: 4, w: 6, h: 6 },
-    { i: 'employee-setup', x: 0, y: 8, w: 6, h: 6 },
-    { i: 'logs', x: 0, y: 14, w: 6, h: 4 },
-    { i: 'n8n', x: 6, y: 14, w: 6, h: 4 },
-    { i: 'proxmox', x: 0, y: 18, w: 6, h: 4 },
-    { i: 'powerbi', x: 6, y: 18, w: 6, h: 4 }
-  ];
 
-  const [layout, setLayout] = useState(() => {
-    try {
-      const saved = localStorage.getItem('dashboardLayout');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return DEFAULT_LAYOUT;
-  });
+  const {
+    tabs,
+    activeTabId,
+    activeTab,
+    setActiveTabId,
+    addTab,
+    renameTab,
+    deleteTab,
+    updateTabLayout,
+    moveModule,
+    getUnassignedModules,
+    addModuleToTab,
+  } = useDashboardTabs();
 
   const getRefreshSeconds = () => {
     const stored = localStorage.getItem('refreshInterval');
@@ -150,12 +145,76 @@ function App() {
   };
 
   const networkStatus = dashboardData.networkStatus || {};
+  const monthlyUptime = dashboardData.monthlyUptime || {};
   const openTickets = dashboardData.openTickets || {};
   const automationLogs = dashboardData.automationLogs || {};
   const n8nExecutions = dashboardData.n8nExecutions || {};
   const proxmoxStatus = dashboardData.proxmoxStatus || {};
   const alerts = dashboardData.alerts || {};
   const assets = dashboardData.assets || {};
+
+  // Map of module key → rendered component
+  const moduleComponents = {
+    'network': (
+      <NetworkStatus
+        data={networkStatus.items || []}
+        sourceUrl={networkStatus.sourceUrl}
+        totalMonitors={networkStatus.totalMonitors || 0}
+      />
+    ),
+    'monthly-uptime': (
+      <MonthlyUptime
+        data={monthlyUptime.items || []}
+        sourceUrl={monthlyUptime.sourceUrl}
+      />
+    ),
+    'tickets': (
+      <OpenTickets
+        data={openTickets.items || []}
+        sourceUrl={openTickets.sourceUrl}
+        totalCount={openTickets.totalCount || 0}
+      />
+    ),
+    'alerts': (
+      <Alerts
+        data={alerts.items || []}
+        sourceUrl={alerts.sourceUrl}
+        totalCount={alerts.totalCount || 0}
+      />
+    ),
+    'assets': (
+      <Assets
+        data={assets.items || []}
+        sourceUrl={assets.sourceUrl}
+        totalCount={assets.totalCount || 0}
+      />
+    ),
+    'employee-setup': (
+      <EmployeeSetup data={dashboardData.employeeSetup || []} />
+    ),
+    'logs': (
+      <AutomationLogs
+        data={automationLogs.items || []}
+        status={automationLogs.status}
+        sourceUrl={automationLogs.sourceUrl}
+      />
+    ),
+    'n8n': (
+      <N8NExecutions
+        data={n8nExecutions.items || []}
+        sourceUrl={n8nExecutions.sourceUrl}
+      />
+    ),
+    'proxmox': (
+      <ProxmoxStatus
+        data={proxmoxStatus.items || []}
+        sourceUrl={proxmoxStatus.sourceUrl}
+      />
+    ),
+    'powerbi': (
+      <PowerBI data={dashboardData.powerbiInfo} />
+    ),
+  };
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
@@ -205,80 +264,78 @@ function App() {
               <Login onLogin={handleLogin} />
             )
           ) : (
-            <ErrorBoundary>
-              <ResponsiveGridLayout
-                className="layout"
-                layouts={{ lg: layout }}
-                onLayoutChange={(currentLayout) => {
-                  setLayout(currentLayout);
-                  localStorage.setItem('dashboardLayout', JSON.stringify(currentLayout));
-                }}
-                breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-                cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-                rowHeight={30}
-                isDraggable={true}
-                isResizable={true}
-                draggableCancel="a,button,input,textarea,select,.MuiAccordionSummary-root,.MuiCheckbox-root,.MuiIconButton-root,.MuiChip-root"
-              >
-                <div key="network" className="dashboard-widget">
-                  <NetworkStatus
-                    data={networkStatus.items || []}
-                    sourceUrl={networkStatus.sourceUrl}
-                    totalMonitors={networkStatus.totalMonitors || 0}
-                  />
-                </div>
-                <div key="tickets" className="dashboard-widget">
-                  <OpenTickets
-                    data={openTickets.items || []}
-                    sourceUrl={openTickets.sourceUrl}
-                    totalCount={openTickets.totalCount || 0}
-                  />
-                </div>
-                <div key="alerts" className="dashboard-widget">
-                  <Alerts
-                    data={alerts.items || []}
-                    sourceUrl={alerts.sourceUrl}
-                    totalCount={alerts.totalCount || 0}
-                  />
-                </div>
-                <div key="assets" className="dashboard-widget">
-                  <Assets
-                    data={assets.items || []}
-                    sourceUrl={assets.sourceUrl}
-                    totalCount={assets.totalCount || 0}
-                  />
-                </div>
-                <div key="employee-setup" className="dashboard-widget">
-                  <EmployeeSetup data={dashboardData.employeeSetup || []} />
-                </div>
-                <div key="logs" className="dashboard-widget">
-                  <AutomationLogs
-                    data={automationLogs.items || []}
-                    status={automationLogs.status}
-                    sourceUrl={automationLogs.sourceUrl}
-                  />
-                </div>
-                <div key="n8n" className="dashboard-widget">
-                  <N8NExecutions
-                    data={n8nExecutions.items || []}
-                    sourceUrl={n8nExecutions.sourceUrl}
-                  />
-                </div>
-                <div key="proxmox" className="dashboard-widget">
-                  <ProxmoxStatus
-                    data={proxmoxStatus.items || []}
-                    sourceUrl={proxmoxStatus.sourceUrl}
-                  />
-                </div>
-                <div key="powerbi" className="dashboard-widget">
-                  <PowerBI data={dashboardData.powerbiInfo} />
-                </div>
-              </ResponsiveGridLayout>
-            </ErrorBoundary>
+            <>
+              <TabBar
+                tabs={tabs}
+                activeTabId={activeTabId}
+                onTabChange={setActiveTabId}
+                onAddTab={addTab}
+                onRenameTab={renameTab}
+                onDeleteTab={deleteTab}
+                onMoveModule={moveModule}
+                onAddModuleToTab={addModuleToTab}
+                unassignedModules={getUnassignedModules()}
+                moduleDisplayNames={MODULE_DISPLAY_NAMES}
+              />
+              <ErrorBoundary>
+                {activeTab.modules.length > 0 ? (
+                  <ResponsiveGridLayout
+                    key={activeTabId}
+                    className="layout"
+                    layouts={{ lg: activeTab.layout }}
+                    onLayoutChange={(currentLayout) => {
+                      updateTabLayout(activeTabId, currentLayout);
+                    }}
+                    breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+                    cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+                    rowHeight={30}
+                    isDraggable={true}
+                    isResizable={true}
+                    draggableCancel="a,button,input,textarea,select,.MuiAccordionSummary-root,.MuiCheckbox-root,.MuiIconButton-root,.MuiChip-root,.MuiTab-root"
+                  >
+                    {activeTab.modules.map((moduleKey) => (
+                      <div key={moduleKey} className="dashboard-widget">
+                        {moduleComponents[moduleKey]}
+                      </div>
+                    ))}
+                  </ResponsiveGridLayout>
+                ) : (
+                  <Box className="tab-empty-state">
+                    <ViewModuleEmpty />
+                  </Box>
+                )}
+              </ErrorBoundary>
+            </>
           )}
         </main>
       </div>
     </ThemeProvider>
+  );
+}
+
+function ViewModuleEmpty() {
+  return (
+    <>
+      <Typography variant="h6" color="text.secondary">
+        No modules on this tab
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Use the <MoreVertIcon /> menu to manage modules, or add modules from another tab.
+      </Typography>
+    </>
+  );
+}
+
+// Inline the icon for the empty state hint
+function MoreVertIcon() {
+  return (
+    <span style={{ verticalAlign: 'middle', display: 'inline-flex' }}>
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="5" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="12" cy="19" r="2" />
+      </svg>
+    </span>
   );
 }
 
