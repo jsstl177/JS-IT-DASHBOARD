@@ -53,13 +53,41 @@ function createDefaultState(layout) {
   };
 }
 
+// Add any newly-registered modules that aren't on any tab to the first tab.
+function migrateNewModules(state) {
+  const assigned = new Set(state.tabs.flatMap((t) => t.modules));
+  const missing = ALL_MODULE_KEYS.filter((key) => !assigned.has(key));
+  if (missing.length === 0) return state;
+
+  const firstTab = state.tabs[0];
+  const bottomY = getBottomY(firstTab.layout);
+  const newLayout = missing.map((mod, idx) => ({
+    i: mod,
+    x: (idx % 2) * 6,
+    y: bottomY + Math.floor(idx / 2) * 4,
+    w: 6,
+    h: 4,
+  }));
+
+  const updatedFirst = {
+    ...firstTab,
+    modules: [...firstTab.modules, ...missing],
+    layout: [...firstTab.layout, ...newLayout],
+  };
+
+  return {
+    ...state,
+    tabs: state.tabs.map((t) => (t.id === updatedFirst.id ? updatedFirst : t)),
+  };
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.tabs) && parsed.tabs.length > 0) {
-        return parsed;
+        return migrateNewModules(parsed);
       }
     }
   } catch {}
