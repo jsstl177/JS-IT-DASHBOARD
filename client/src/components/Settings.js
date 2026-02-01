@@ -5,7 +5,37 @@ import {
   DialogTitle, DialogContent, DialogActions, CircularProgress, Chip
 } from '@mui/material';
 import { Delete as DeleteIcon, Add as AddIcon, Edit as EditIcon, PlayArrow as PlayArrowIcon } from '@mui/icons-material';
+import MenuItem from '@mui/material/MenuItem';
 import axios from 'axios';
+
+const SERVICE_URL_HINTS = {
+  'uptime-kuma': 'https://uptime-kuma.example.com',
+  'superops': 'https://yourcompany.superops.ai',
+  'automation-log': 'https://automation-log.example.com',
+  'n8n': 'https://n8n.example.com',
+  'proxmox': 'https://proxmox.example.com:8006',
+  'powerbi': 'https://app.powerbi.com/reportEmbed?reportId=...',
+  'smtp': 'smtp.example.com'
+};
+
+const SERVICE_PATH_HINTS = {
+  'uptime-kuma': 'Base URL or full status-page URL — slug is auto-detected',
+  'superops': 'Tenant URL — subdomain auto-extracted for GraphQL API',
+  'automation-log': 'Appends /api/logs and /api/status',
+  'n8n': 'Appends /rest/executions',
+  'proxmox': 'Appends /api2/json/...',
+  'powerbi': 'Full embed URL — no path appended',
+  'smtp': 'SMTP server — use Base URL for host, API Key for port'
+};
+
+const SMTP_FIELD_LABELS = {
+  base_url: 'SMTP Server',
+  api_key: 'Port',
+  username: 'Sender Email',
+  password: 'SMTP Password'
+};
+
+const REFRESH_OPTIONS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
 
 function Settings({ onClose }) {
   const [settings, setSettings] = useState([]);
@@ -24,6 +54,10 @@ function Settings({ onClose }) {
   const [testingService, setTestingService] = useState(null);
   const [testResult, setTestResult] = useState(null);
   const [editingService, setEditingService] = useState(null);
+  const [refreshInterval, setRefreshInterval] = useState(() => {
+    const stored = localStorage.getItem('refreshInterval');
+    return stored ? Number(stored) : 60;
+  });
 
   useEffect(() => {
     fetchSettings();
@@ -140,14 +174,15 @@ function Settings({ onClose }) {
       'automation-log': 'Automation Log',
       'n8n': 'N8N',
       'proxmox': 'Proxmox',
-      'powerbi': 'Power BI'
+      'powerbi': 'Power BI',
+      'smtp': 'SMTP Email'
     };
     return names[service] || service;
   };
 
   return (
     <div style={{ padding: '20px' }}>
-      <Typography variant="h4" component="h1" gutterBottom>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
         Dashboard Settings
       </Typography>
 
@@ -176,12 +211,15 @@ function Settings({ onClose }) {
                     <option value="n8n">N8N</option>
                     <option value="proxmox">Proxmox</option>
                     <option value="powerbi">Power BI</option>
+                    <option value="smtp">SMTP Email</option>
                   </TextField>
                 </Grid>
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="Base URL"
+                    label={newSetting.service === 'smtp' ? SMTP_FIELD_LABELS.base_url : 'Base URL'}
+                    placeholder={SERVICE_URL_HINTS[newSetting.service] || ''}
+                    helperText={SERVICE_PATH_HINTS[newSetting.service] || ''}
                     value={newSetting.base_url}
                     onChange={(e) => setNewSetting({ ...newSetting, base_url: e.target.value })}
                   />
@@ -189,7 +227,8 @@ function Settings({ onClose }) {
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="API Key"
+                    label={newSetting.service === 'smtp' ? SMTP_FIELD_LABELS.api_key : 'API Key'}
+                    placeholder={newSetting.service === 'smtp' ? '587' : ''}
                     value={newSetting.api_key}
                     onChange={(e) => setNewSetting({ ...newSetting, api_key: e.target.value })}
                   />
@@ -197,7 +236,7 @@ function Settings({ onClose }) {
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="Username"
+                    label={newSetting.service === 'smtp' ? SMTP_FIELD_LABELS.username : 'Username'}
                     value={newSetting.username}
                     onChange={(e) => setNewSetting({ ...newSetting, username: e.target.value })}
                   />
@@ -205,7 +244,7 @@ function Settings({ onClose }) {
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="Password"
+                    label={newSetting.service === 'smtp' ? SMTP_FIELD_LABELS.password : 'Password'}
                     type="password"
                     placeholder={editingService ? 'Leave blank to keep existing' : ''}
                     value={newSetting.password}
@@ -287,6 +326,31 @@ function Settings({ onClose }) {
           </Card>
         </Grid>
       </Grid>
+
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Dashboard Settings
+          </Typography>
+          <TextField
+            select
+            fullWidth
+            label="Dashboard Refresh Rate"
+            value={refreshInterval}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              setRefreshInterval(val);
+              localStorage.setItem('refreshInterval', String(val));
+            }}
+          >
+            {REFRESH_OPTIONS.map((sec) => (
+              <MenuItem key={sec} value={sec}>
+                {sec}s
+              </MenuItem>
+            ))}
+          </TextField>
+        </CardContent>
+      </Card>
 
       {error && (
         <Alert severity="error" style={{ marginTop: '20px' }}>

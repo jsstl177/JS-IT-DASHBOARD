@@ -1,23 +1,21 @@
 import React from 'react';
-import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { themeNames } from '../themes';
+import { IconButton, Tooltip } from '@mui/material';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 
 function ThemeSelector({ currentTheme, onThemeChange }) {
+  const isDark = currentTheme === 'dark';
+
   return (
-    <FormControl size="small" style={{ marginRight: '10px', minWidth: '120px' }}>
-      <InputLabel>Theme</InputLabel>
-      <Select
-        value={currentTheme}
-        label="Theme"
-        onChange={(e) => onThemeChange(e.target.value)}
+    <Tooltip title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+      <IconButton
+        onClick={() => onThemeChange(isDark ? 'light' : 'dark')}
+        sx={{ color: 'inherit' }}
+        size="small"
       >
-        {Object.entries(themeNames).map(([key, name]) => (
-          <MenuItem key={key} value={key}>
-            {name}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+        {isDark ? <LightModeIcon /> : <DarkModeIcon />}
+      </IconButton>
+    </Tooltip>
   );
 }
 

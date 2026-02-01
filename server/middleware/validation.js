@@ -54,6 +54,20 @@ const validateSettings = (req, res, next) => {
           errors.push('Valid embed URL is required for Power BI');
         }
         break;
+      case 'smtp':
+        if (!base_url) {
+          errors.push('SMTP server host is required');
+        }
+        if (!api_key) {
+          errors.push('SMTP port is required');
+        }
+        if (!req.body.username) {
+          errors.push('SMTP username/sender email is required');
+        }
+        if (!req.body.password) {
+          errors.push('SMTP password is required');
+        }
+        break;
       default:
         errors.push('Invalid service type');
     }
@@ -133,10 +147,12 @@ function isValidUrl(string) {
   }
 }
 
-// Sanitize input helper - use validator.escape for proper HTML entity encoding
+// Sanitize input helper - trim whitespace only.
+// SQL injection is prevented by parameterized queries; XSS is prevented by React's output escaping.
+// validator.escape() must NOT be used here as it HTML-encodes characters (e.g. / → &#x2F;) corrupting stored data.
 const sanitizeInput = (input) => {
   if (typeof input === 'string') {
-    return validator.escape(input.trim());
+    return input.trim();
   }
   return input;
 };

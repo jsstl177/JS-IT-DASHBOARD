@@ -10,16 +10,31 @@ async function testUptimeKuma(config) {
 }
 
 async function testSuperOps(config) {
-  const client = axios.create({
-    baseURL: config.base_url,
-    timeout: SERVICE_TIMEOUT,
-    headers: {
-      'Authorization': `Bearer ${config.api_key}`,
-      'Content-Type': 'application/json'
+  const { extractSubdomain } = require('./superOps');
+  const subdomain = extractSubdomain(config.base_url);
+
+  const response = await axios.post(
+    'https://api.superops.ai/msp',
+    {
+      query: `query getStatusList { getStatusList { statusId name } }`,
+      variables: {}
+    },
+    {
+      timeout: SERVICE_TIMEOUT,
+      headers: {
+        'Authorization': `Bearer ${config.api_key}`,
+        'CustomerSubDomain': subdomain,
+        'Content-Type': 'application/json'
+      }
     }
-  });
-  await client.get('/api/tickets', { params: { status: 'open' } });
-  return { success: true, message: 'SuperOps API authenticated successfully.' };
+  );
+
+  if (response.data.errors) {
+    const msg = response.data.errors.map(e => e.message).join('; ');
+    throw new Error(msg);
+  }
+
+  return { success: true, message: `SuperOps API authenticated successfully (subdomain: ${subdomain}).` };
 }
 
 async function testAutomationLog(config) {
@@ -62,6 +77,22 @@ function testPowerBI(config) {
   return { success: true, message: 'Power BI embed URL format is valid.' };
 }
 
+async function testSmtp(config) {
+  const nodemailer = require('nodemailer');
+  const port = parseInt(config.api_key, 10);
+  const transport = nodemailer.createTransport({
+    host: config.base_url,
+    port,
+    secure: port === 465,
+    auth: {
+      user: config.username,
+      pass: config.password
+    }
+  });
+  await transport.verify();
+  return { success: true, message: 'SMTP connection and authentication successful.' };
+}
+
 async function testServiceConnection(serviceType, config) {
   switch (serviceType) {
     case 'uptime-kuma':
@@ -76,6 +107,8 @@ async function testServiceConnection(serviceType, config) {
       return testProxmox(config);
     case 'powerbi':
       return testPowerBI(config);
+    case 'smtp':
+      return testSmtp(config);
     default:
       throw new Error(`Unknown service type: ${serviceType}`);
   }

@@ -1,6 +1,6 @@
 const express = require('express');
 const { getNetworkStatus } = require('../services/uptimeKuma');
-const { getOpenTickets } = require('../services/superOps');
+const { getOpenTickets, createTicket } = require('../services/superOps');
 const { getAutomationLogs } = require('../services/automationLog');
 const { getWorkflowExecutions } = require('../services/n8n');
 const { getProxmoxStatus } = require('../services/proxmox');
@@ -19,9 +19,9 @@ router.get('/data', asyncHandler(async (req, res) => {
   const settings = await getSettingsFromDB();
 
   const results = {
-    networkStatus: { sourceUrl: null, items: [] },
-    openTickets: { sourceUrl: null, items: [] },
-    automationLogs: { sourceUrl: null, items: [] },
+    networkStatus: { sourceUrl: null, totalMonitors: 0, items: [] },
+    openTickets: { sourceUrl: null, items: [], totalCount: 0 },
+    automationLogs: { sourceUrl: null, status: null, items: [] },
     n8nExecutions: { sourceUrl: null, items: [] },
     proxmoxStatus: { sourceUrl: null, items: [] },
     powerbiInfo: null,
@@ -108,5 +108,29 @@ function timeoutPromise(ms, message) {
     setTimeout(() => reject(new Error(message)), ms);
   });
 }
+
+// Create case via SuperOps API
+router.post('/create-case', asyncHandler(async (req, res) => {
+  const { customer, description } = req.body;
+
+  if (!customer || !description) {
+    return res.status(400).json({ error: 'Customer and description are required' });
+  }
+
+  const settings = await getSettingsFromDB();
+  const superops = settings.find(s => s.service === 'superops');
+
+  if (!superops || !superops.base_url || !superops.api_key) {
+    return res.status(400).json({ error: 'SuperOps is not configured. Please add SuperOps settings first.' });
+  }
+
+  const ticket = await createTicket(superops.base_url, superops.api_key, {
+    subject: description,
+    description: `Customer: ${customer}\n\nIssue: ${description}`
+  });
+
+  logger.info(`Case created in SuperOps for customer: ${customer}, ticket: ${ticket.displayId}`);
+  res.json({ success: true, ticket });
+}));
 
 module.exports = router;

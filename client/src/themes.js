@@ -1,121 +1,137 @@
 import { createTheme } from '@mui/material/styles';
 
-// Default Theme
-const defaultTheme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-    background: {
-      default: '#f5f5f5',
-      paper: '#ffffff',
+const sharedTypography = {
+  fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+};
+
+const sharedShape = {
+  borderRadius: 12,
+};
+
+const sharedComponents = (mode) => ({
+  MuiCard: {
+    styleOverrides: {
+      root: {
+        borderRadius: 16,
+        boxShadow: mode === 'light'
+          ? '0 2px 12px rgba(0, 0, 0, 0.06)'
+          : '0 2px 12px rgba(0, 0, 0, 0.3)',
+      },
     },
   },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+  MuiButton: {
+    styleOverrides: {
+      root: {
+        borderRadius: 10,
+        textTransform: 'none',
+        fontWeight: 600,
+      },
+    },
+  },
+  MuiChip: {
+    styleOverrides: {
+      root: {
+        borderRadius: 8,
+      },
+    },
+  },
+  MuiDialog: {
+    styleOverrides: {
+      paper: {
+        borderRadius: 20,
+      },
+    },
+  },
+  MuiTextField: {
+    styleOverrides: {
+      root: {
+        '& .MuiOutlinedInput-root': {
+          borderRadius: 10,
+        },
+      },
+    },
+  },
+  MuiAlert: {
+    styleOverrides: {
+      root: {
+        borderRadius: 10,
+      },
+    },
+  },
+  MuiListItem: {
+    styleOverrides: {
+      root: {
+        borderRadius: 10,
+      },
+    },
+  },
+  MuiPaper: {
+    styleOverrides: {
+      root: {
+        borderRadius: 16,
+      },
+    },
   },
 });
 
-// Dark Theme
+// Light Theme — Johnstone Supply blue & white
+const lightTheme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#003876',
+      light: '#1a5dab',
+      dark: '#002550',
+    },
+    secondary: {
+      main: '#4a90d9',
+    },
+    background: {
+      default: '#f0f4f8',
+      paper: '#ffffff',
+    },
+    text: {
+      primary: '#1a2332',
+      secondary: '#5a6a7e',
+    },
+  },
+  typography: sharedTypography,
+  shape: sharedShape,
+  components: sharedComponents('light'),
+});
+
+// Dark Theme — deep navy with blue accents
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#90caf9',
+      main: '#5b9bd5',
+      light: '#8bbfea',
+      dark: '#3a7ab8',
     },
     secondary: {
-      main: '#f48fb1',
+      main: '#82b1ff',
     },
     background: {
-      default: '#121212',
-      paper: '#1e1e1e',
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-  },
-});
-
-// High Contrast Theme
-const highContrastTheme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#000000',
-    },
-    secondary: {
-      main: '#ffffff',
-    },
-    background: {
-      default: '#ffffff',
-      paper: '#ffffff',
+      default: '#0d1117',
+      paper: '#161b22',
     },
     text: {
-      primary: '#000000',
-      secondary: '#000000',
+      primary: '#e6edf3',
+      secondary: '#8b949e',
     },
   },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-  },
-});
-
-// Blue Ocean Theme
-const blueOceanTheme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#006994',
-    },
-    secondary: {
-      main: '#00a6fb',
-    },
-    background: {
-      default: '#e3f2fd',
-      paper: '#ffffff',
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-  },
-});
-
-// Forest Theme
-const forestTheme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#2e7d32',
-    },
-    secondary: {
-      main: '#4caf50',
-    },
-    background: {
-      default: '#e8f5e8',
-      paper: '#ffffff',
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-  },
+  typography: sharedTypography,
+  shape: sharedShape,
+  components: sharedComponents('dark'),
 });
 
 export const themes = {
-  default: defaultTheme,
+  light: lightTheme,
   dark: darkTheme,
-  highContrast: highContrastTheme,
-  blueOcean: blueOceanTheme,
-  forest: forestTheme,
 };
 
 export const themeNames = {
-  default: 'Default',
+  light: 'Light',
   dark: 'Dark',
-  highContrast: 'High Contrast',
-  blueOcean: 'Blue Ocean',
-  forest: 'Forest',
 };

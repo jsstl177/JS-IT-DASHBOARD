@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, Snackbar, Alert } from '@mui/material';
 import { Responsive, WidthProvider } from 'react-grid-layout';
@@ -28,8 +28,8 @@ function App() {
   const [retrying, setRetrying] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('theme') || 'default');
-  const [layout, setLayout] = useState([
+  const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('theme') || 'light');
+  const DEFAULT_LAYOUT = [
     { i: 'network', x: 0, y: 0, w: 6, h: 4 },
     { i: 'tickets', x: 6, y: 0, w: 6, h: 4 },
     { i: 'employee-setup', x: 0, y: 4, w: 12, h: 6 },
@@ -37,7 +37,27 @@ function App() {
     { i: 'n8n', x: 6, y: 10, w: 6, h: 4 },
     { i: 'proxmox', x: 0, y: 14, w: 6, h: 4 },
     { i: 'powerbi', x: 6, y: 14, w: 6, h: 4 }
-  ]);
+  ];
+
+  const [layout, setLayout] = useState(() => {
+    try {
+      const saved = localStorage.getItem('dashboardLayout');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_LAYOUT;
+  });
+
+  const getRefreshSeconds = () => {
+    const stored = localStorage.getItem('refreshInterval');
+    return stored ? Number(stored) : 60;
+  };
+
+  const [countdown, setCountdown] = useState(getRefreshSeconds());
+  const [refreshSeconds, setRefreshSeconds] = useState(getRefreshSeconds());
+  const refreshSecondsRef = useRef(getRefreshSeconds());
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -59,11 +79,54 @@ function App() {
     }
   }, []);
 
+  // Data fetch interval — restarts when refreshSeconds changes
   useEffect(() => {
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 60000); // Refresh every minute
-    return () => clearInterval(interval);
-  }, [fetchDashboardData]);
+    setCountdown(refreshSeconds);
+
+    const dataInterval = setInterval(() => {
+      fetchDashboardData();
+      setCountdown(refreshSeconds);
+    }, refreshSeconds * 1000);
+
+    return () => clearInterval(dataInterval);
+  }, [fetchDashboardData, refreshSeconds]);
+
+  // 1-second tick for the countdown display
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setCountdown((prev) => (prev > 1 ? prev - 1 : prev));
+    }, 1000);
+    return () => clearInterval(tick);
+  }, []);
+
+  // Listen for localStorage changes (same tab via patched setItem, other tabs via storage event)
+  useEffect(() => {
+    const applyNewInterval = () => {
+      const secs = getRefreshSeconds();
+      refreshSecondsRef.current = secs;
+      setRefreshSeconds(secs);
+      setCountdown(secs);
+    };
+
+    const handleStorageEvent = (e) => {
+      if (e.key === 'refreshInterval') applyNewInterval();
+    };
+
+    window.addEventListener('storage', handleStorageEvent);
+
+    // Patch localStorage.setItem so same-tab writes also update the countdown
+    const origSetItem = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = (key, value) => {
+      origSetItem(key, value);
+      if (key === 'refreshInterval') applyNewInterval();
+    };
+
+    return () => {
+      window.removeEventListener('storage', handleStorageEvent);
+      localStorage.setItem = origSetItem;
+    };
+  }, []);
 
   const handleLogin = (token) => {
     localStorage.setItem('authToken', token);
@@ -93,11 +156,18 @@ function App() {
   }
 
   return (
-    <ThemeProvider theme={themes[currentTheme]}>
+    <ThemeProvider theme={themes[currentTheme] || themes.light}>
       <CssBaseline />
       <div className="App">
         <header className="app-header">
-          <h1>JS IT Dashboard</h1>
+          <div className="header-brand">
+            <img src="/logo.png" alt="Johnstone Supply" className="header-logo" />
+            <div className="header-title">
+              <h1>Johnstone Supply - The Wines Group</h1>
+              <span className="header-subtitle">IT Dashboard</span>
+            </div>
+          </div>
+          <span className="refresh-countdown">Refresh in {countdown}s</span>
           <div className="header-actions">
             <ThemeSelector currentTheme={currentTheme} onThemeChange={handleThemeChange} />
             <button onClick={() => setShowSettings(!showSettings)}>
@@ -133,7 +203,10 @@ function App() {
               <ResponsiveGridLayout
                 className="layout"
                 layouts={{ lg: layout }}
-                onLayoutChange={(currentLayout) => setLayout(currentLayout)}
+                onLayoutChange={(currentLayout) => {
+                  setLayout(currentLayout);
+                  localStorage.setItem('dashboardLayout', JSON.stringify(currentLayout));
+                }}
                 breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                 cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
                 rowHeight={30}
@@ -144,12 +217,14 @@ function App() {
                   <NetworkStatus
                     data={networkStatus.items || []}
                     sourceUrl={networkStatus.sourceUrl}
+                    totalMonitors={networkStatus.totalMonitors || 0}
                   />
                 </div>
                 <div key="tickets" className="dashboard-widget">
                   <OpenTickets
                     data={openTickets.items || []}
                     sourceUrl={openTickets.sourceUrl}
+                    totalCount={openTickets.totalCount || 0}
                   />
                 </div>
                 <div key="employee-setup" className="dashboard-widget">
@@ -158,6 +233,7 @@ function App() {
                 <div key="logs" className="dashboard-widget">
                   <AutomationLogs
                     data={automationLogs.items || []}
+                    status={automationLogs.status}
                     sourceUrl={automationLogs.sourceUrl}
                   />
                 </div>

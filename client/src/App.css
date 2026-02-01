@@ -1,45 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 .App {
-  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  font-family: 'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif;
 }
 
 .app-header {
-  background-color: #1976d2;
+  background: linear-gradient(135deg, #003876 0%, #002550 100%);
   color: white;
-  padding: 16px;
+  padding: 12px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-.app-header h1 {
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-logo {
+  height: 40px;
+  width: auto;
+  filter: brightness(0) invert(1);
+}
+
+.header-title {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.header-title h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.header-subtitle {
+  font-size: 0.7rem;
+  opacity: 0.75;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.refresh-countdown {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 6px;
 }
 
 .header-actions button {
   background-color: rgba(255, 255, 255, 0.1);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 8px 16px;
-  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 7px 16px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  font-family: 'Inter', 'Roboto', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
 }
 
 .header-actions button:hover {
   background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 main {
   padding: 20px;
-  background-color: #f5f5f5;
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 66px);
+  transition: background-color 0.3s ease;
 }
 
 .layout {
@@ -49,6 +95,15 @@ main {
 .dashboard-widget {
   height: 100%;
   overflow: hidden;
+}
+
+.dashboard-widget > .MuiCard-root {
+  height: 100%;
+  transition: box-shadow 0.2s ease;
+}
+
+.dashboard-widget > .MuiCard-root:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-widget .MuiCardContent-root {
@@ -62,13 +117,16 @@ main {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  font-size: 1.2rem;
-  color: #666;
+  font-size: 1.1rem;
+  color: #5a6a7e;
+  font-family: 'Inter', 'Roboto', sans-serif;
+  font-weight: 500;
 }
 
 /* React Grid Layout styles */
 .react-grid-item.react-grid-placeholder {
-  background: #bed7ff !important;
+  background: rgba(0, 56, 118, 0.15) !important;
+  border-radius: 16px !important;
   opacity: 0.8 !important;
 }
 
@@ -91,8 +149,8 @@ main {
   bottom: 3px;
   width: 5px;
   height: 5px;
-  border-right: 2px solid rgba(0, 0, 0, 0.4);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+  border-right: 2px solid rgba(0, 0, 0, 0.3);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.3);
 }
 
 /* Responsive adjustments */
@@ -100,6 +158,7 @@ main {
   .app-header {
     flex-direction: column;
     gap: 10px;
+    padding: 12px 16px;
   }
 
   .header-actions {
@@ -107,7 +166,15 @@ main {
     justify-content: center;
   }
 
+  .header-logo {
+    height: 32px;
+  }
+
+  .header-title h1 {
+    font-size: 1rem;
+  }
+
   main {
-    padding: 10px;
+    padding: 12px;
   }
 }

@@ -24,7 +24,8 @@
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
-    "sqlite3": "^5.1.7",
+    "mysql2": "^3.10.3",
+    "nodemailer": "^7.0.13",
     "validator": "^13.15.0"
   },
   "devDependencies": {
@@ -33,7 +34,9 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["<rootDir>/tests/**/*.test.js"],
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.js"
+    ],
     "coverageThreshold": {
       "global": {
         "branches": 50,

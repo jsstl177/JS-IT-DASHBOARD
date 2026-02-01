@@ -1,98 +1,99 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const mysql = require('mysql2/promise');
 
-const dbPath = path.join(__dirname, 'dashboard.db');
-const db = new sqlite3.Database(dbPath);
+const dbConfig = {
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'dashboard',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+};
 
-// Initialize database tables
-db.serialize(() => {
-  const tableQueries = [
-    // Settings table for API keys and credentials
-    `CREATE TABLE IF NOT EXISTS settings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      service TEXT UNIQUE,
-      api_key TEXT,
-      api_secret TEXT,
-      base_url TEXT,
-      username TEXT,
-      password TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`,
+// Create pool synchronously so it's available immediately on require()
+const pool = mysql.createPool(dbConfig);
 
-    // User table for authentication
-    `CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE,
-      password_hash TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`,
+async function initializeDatabase() {
+  try {
+    const tableQueries = [
+      `CREATE TABLE IF NOT EXISTS settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        service VARCHAR(255) UNIQUE,
+        api_key TEXT,
+        api_secret TEXT,
+        base_url TEXT,
+        username VARCHAR(255),
+        password TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )`,
 
-    // New employee setup checklist table
-    `CREATE TABLE IF NOT EXISTS employee_setup_checklist (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      employee_name TEXT NOT NULL,
-      employee_email TEXT,
-      store_number TEXT,
-      ticket_id TEXT,
-      department TEXT,
-      status TEXT DEFAULT 'pending',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`,
+      `CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255) UNIQUE,
+        password_hash TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`,
 
-    // Checklist items table
-    `CREATE TABLE IF NOT EXISTS checklist_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      checklist_id INTEGER,
-      category TEXT NOT NULL,
-      item_name TEXT NOT NULL,
-      description TEXT,
-      status TEXT DEFAULT 'pending',
-      notes TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (checklist_id) REFERENCES employee_setup_checklist (id) ON DELETE CASCADE
-    )`
-  ];
+      `CREATE TABLE IF NOT EXISTS employee_setup_checklist (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        employee_name VARCHAR(255) NOT NULL,
+        employee_email VARCHAR(255),
+        store_number VARCHAR(255),
+        ticket_id VARCHAR(255),
+        department VARCHAR(255),
+        status VARCHAR(255) DEFAULT 'pending',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )`,
 
-  let hasError = false;
+      `CREATE TABLE IF NOT EXISTS checklist_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        checklist_id INT,
+        category VARCHAR(255) NOT NULL,
+        item_name VARCHAR(255) NOT NULL,
+        description TEXT,
+        status VARCHAR(255) DEFAULT 'pending',
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (checklist_id) REFERENCES employee_setup_checklist (id) ON DELETE CASCADE
+      )`
+    ];
 
-  tableQueries.forEach((query, index) => {
-    db.run(query, (err) => {
-      if (err) {
-        console.error(`Error creating table (query ${index + 1}):`, err.message);
-        hasError = true;
-        if (index === tableQueries.length - 1) {
-          console.error('FATAL: Database initialization failed. Exiting.');
-          process.exit(1);
-        }
-      }
+    for (const query of tableQueries) {
+      await pool.execute(query);
+    }
 
-      // After last table is created successfully, insert default admin
-      if (index === tableQueries.length - 1 && !hasError) {
-        const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD;
-        if (!defaultPassword) {
-          console.error('FATAL: DEFAULT_ADMIN_PASSWORD environment variable is required. Exiting.');
-          process.exit(1);
-        }
+    console.log('Database tables initialized successfully.');
 
-        const bcrypt = require('bcryptjs');
-        const saltRounds = 10;
+    // Insert default admin user
+    const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+    if (!defaultPassword) {
+      console.error('FATAL: DEFAULT_ADMIN_PASSWORD environment variable is required. Exiting.');
+      process.exit(1);
+    }
 
-        bcrypt.hash(defaultPassword, saltRounds, (err, hash) => {
-          if (err) {
-            console.error('Error hashing default password:', err.message);
-            return;
-          }
-          db.run(
-            'INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)',
-            ['admin', hash]
-          );
-        });
-      }
-    });
-  });
-});
+    const bcrypt = require('bcryptjs');
+    const saltRounds = 10;
+    const hash = await bcrypt.hash(defaultPassword, saltRounds);
 
-module.exports = db;
+    await pool.execute(
+      'INSERT IGNORE INTO users (username, password_hash) VALUES (?, ?)',
+      ['admin', hash]
+    );
+
+    console.log('Default admin user inserted successfully.');
+
+  } catch (err) {
+    console.error('FATAL: Database initialization failed:', err.message);
+    process.exit(1);
+  }
+}
+
+// Initialize tables asynchronously
+initializeDatabase();
+
+// Export the pool immediately (pool object is valid before connections are made)
+module.exports = pool;

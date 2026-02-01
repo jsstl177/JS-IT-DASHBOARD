@@ -1,16 +1,22 @@
-version: '3.8'
-
 services:
   dashboard:
     build: .
     ports:
-      - "5000:5000"
+      - "5001:5000"
     env_file: .env
     environment:
       - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=rootpassword
+      - DB_NAME=dashboard
     volumes:
       - dashboard_data:/app/data
     restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]
       interval: 30s
@@ -18,5 +24,22 @@ services:
       retries: 3
       start_period: 40s
 
+  mariadb:
+    image: mariadb:10.11
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: dashboard
+      MYSQL_USER: dashboard_user
+      MYSQL_PASSWORD: dashboard_password
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   dashboard_data:
+  mariadb_data:
