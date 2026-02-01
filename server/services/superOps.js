@@ -337,71 +337,109 @@ query getAssetList($input: ListInfoInput!) {
 
 async function getAssets(tenantUrl, apiKey) {
   const subdomain = extractSubdomain(tenantUrl);
+  const allAssets = [];
+  let page = 1;
+  let hasMore = true;
+  const pageSize = 500;
+  let totalCount = 0;
 
   try {
-    const response = await axios.post(
-      SUPEROPS_API_URL,
-      {
-        query: ASSET_LIST_QUERY,
-        variables: {
-          input: {
-            page: 1,
-            pageSize: 500
+    // Fetch all pages of assets
+    while (hasMore) {
+      const response = await axios.post(
+        SUPEROPS_API_URL,
+        {
+          query: ASSET_LIST_QUERY,
+          variables: {
+            input: {
+              page: page,
+              pageSize: pageSize
+            }
+          }
+        },
+        {
+          timeout: 15000,
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'CustomerSubDomain': subdomain,
+            'Content-Type': 'application/json'
           }
         }
-      },
-      {
-        timeout: 15000,
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'CustomerSubDomain': subdomain,
-          'Content-Type': 'application/json'
-        }
+      );
+
+      if (response.data.errors) {
+        logger.error('SuperOps getAssetList errors', {
+          service: 'superops',
+          errors: response.data.errors,
+          page: page
+        });
+        break;
       }
-    );
 
-    if (response.data.errors) {
-      logger.error('SuperOps getAssetList errors', {
-        service: 'superops',
-        errors: response.data.errors
-      });
-      return { sourceUrl: tenantUrl, items: [], totalCount: 0 };
+      const data = response.data.data?.getAssetList;
+      if (!data) {
+        logger.warn('SuperOps returned no asset list data', { page: page });
+        break;
+      }
+
+      const assets = (data.assets || []).map(asset => ({
+        id: asset.assetId,
+        name: asset.name,
+        assetClass: asset.assetClass?.name || asset.assetClass || null,
+        client: asset.client?.name || asset.client || null,
+        site: asset.site?.name || asset.site || null,
+        serialNumber: asset.serialNumber,
+        manufacturer: asset.manufacturer,
+        model: asset.model,
+        hostName: asset.hostName,
+        platform: asset.platform,
+        status: asset.status,
+        lastCommunicatedTime: asset.lastCommunicatedTime,
+        link: tenantUrl.replace(/\/+$/, '')
+      }));
+
+      allAssets.push(...assets);
+      
+      // Update totalCount and hasMore from the response
+      totalCount = data.listInfo?.totalCount || 0;
+      hasMore = data.listInfo?.hasMore || false;
+      
+      logger.info(`Fetched page ${page} of assets: ${assets.length} items (Total: ${totalCount}, HasMore: ${hasMore})`);
+      
+      page++;
+      
+      // Safety check: if we've fetched more items than the total count suggests, stop
+      if (totalCount > 0 && allAssets.length >= totalCount) {
+        hasMore = false;
+      }
+      
+      // Additional safety check: limit to 20 pages to prevent infinite loops
+      if (page > 20) {
+        logger.warn('Reached maximum page limit (20) when fetching assets');
+        break;
+      }
     }
 
-    const data = response.data.data?.getAssetList;
-    if (!data) {
-      logger.warn('SuperOps returned no asset list data');
-      return { sourceUrl: tenantUrl, items: [], totalCount: 0 };
-    }
-
-    const assets = (data.assets || []).map(asset => ({
-      id: asset.assetId,
-      name: asset.name,
-      assetClass: asset.assetClass?.name || asset.assetClass || null,
-      client: asset.client?.name || asset.client || null,
-      site: asset.site?.name || asset.site || null,
-      serialNumber: asset.serialNumber,
-      manufacturer: asset.manufacturer,
-      model: asset.model,
-      hostName: asset.hostName,
-      platform: asset.platform,
-      status: asset.status,
-      lastCommunicatedTime: asset.lastCommunicatedTime,
-      link: tenantUrl.replace(/\/+$/, '')
-    }));
+    logger.info(`Total assets fetched: ${allAssets.length} (Expected: ${totalCount})`);
 
     return {
       sourceUrl: tenantUrl.replace(/\/+$/, ''),
-      items: assets,
-      totalCount: data.listInfo?.totalCount || assets.length
+      items: allAssets,
+      totalCount: totalCount || allAssets.length
     };
   } catch (error) {
     logger.error('SuperOps getAssets error', {
       service: 'superops',
       error: error.message,
-      status: error.response?.status
+      status: error.response?.status,
+      page: page
     });
-    return { sourceUrl: tenantUrl, items: [], totalCount: 0 };
+    // Return whatever we've fetched so far
+    return { 
+      sourceUrl: tenantUrl, 
+      items: allAssets, 
+      totalCount: allAssets.length 
+    };
   }
 }
 

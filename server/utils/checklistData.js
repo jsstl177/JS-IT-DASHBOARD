@@ -1,6 +1,13 @@
 // Default checklist items based on the New Employee Setup document
 const defaultChecklistItems = [
-  // Outlook Email
+  // 1. Domain
+  {
+    category: 'Domain',
+    item_name: 'Setup Domain User',
+    description: 'Log into Domain controller (192.168.177.27). Open Users & computers from Server manager. Copy a user that is in the same department. Ensure user is in Entra-Sync OU'
+  },
+
+  // 2. Outlook Email
   {
     category: 'Outlook Email',
     item_name: 'Request New Employee Email',
@@ -12,43 +19,26 @@ const defaultChecklistItems = [
     description: 'Set reminder that if email password is not sent within 24 hours then reach out to corp. Save temp password for new employee until Day 1 training'
   },
 
-  // JEN
+  // 3. M365
   {
-    category: 'JEN',
-    item_name: 'Create JEN UserID',
-    description: 'UserID: (first initial, last name, underscore, store number). Go to JXI and hit Update JXI users from JEN at the top right'
+    category: 'M365',
+    item_name: 'Assign M365 License',
+    description: 'Assign appropriate license: F1, Business Basic, or Business Standard based on role'
   },
   {
-    category: 'JEN',
-    item_name: 'Configure JEN Display Name',
-    description: 'Display Name is First Name(SPACE)LastName. Fill out form. Confidential needs to be selected'
-  },
-
-  // JU Online
-  {
-    category: 'JU Online',
-    item_name: 'Setup JU Online Account',
-    description: 'Username is johnstone email. Log into JU Online button and select ADMIN, go to Admin on the top right'
-  },
-  {
-    category: 'JU Online',
-    item_name: 'Add Person to Directory',
-    description: 'Go to Directory then select People->Add Person. Use Johnsonsupply.com email'
-  },
-  {
-    category: 'JU Online',
-    item_name: 'Configure JU Online Groups',
-    description: 'Assign appropriate groups (list provided in document)'
+    category: 'M365',
+    item_name: 'Configure License Details',
+    description: 'F1=$1.66, Business Basic=$5.67, Business Standard=$11.80. All include F1 base license'
   },
 
-  // Domain
+  // 4. Dashlane
   {
-    category: 'Domain',
-    item_name: 'Setup Domain User',
-    description: 'Log into Domain controller (192.168.177.27). Open Users & computers from Server manager. Copy a user that is in the same department. Ensure user is in Entra-Sync OU'
+    category: 'Dashlane',
+    item_name: 'Add User to Dashlane',
+    description: 'Log into Dashlane, go to account then admin. Add User. Type in new employees johnstone email'
   },
 
-  // INFORM
+  // 5. INFORM
   {
     category: 'INFORM',
     item_name: 'Setup INFORM User',
@@ -65,59 +55,36 @@ const defaultChecklistItems = [
     description: 'On another computer use the INFORM icon login with newly created credentials but do NOT check remember me'
   },
 
-  // UPG Navigator and Goodman
+  // 6. JEN
   {
-    category: 'UPG Navigator',
-    item_name: 'Setup UPG Navigator Account',
-    description: 'Account, Manage Account, Add User. Fill out form. Check Goodman Toolkit and Amana Toolkit boxes'
+    category: 'JEN',
+    item_name: 'Create JEN UserID',
+    description: 'UserID: (first initial, last name, underscore, store number). Go to JXI and hit Update JXI users from JEN at the top right'
   },
   {
-    category: 'UPG Navigator',
-    item_name: 'Configure Goodman Credentials',
-    description: 'Goodman User: (First name (.) Last name). Goodman Pass: welcome'
-  },
-
-  // Dashlane
-  {
-    category: 'Dashlane',
-    item_name: 'Add User to Dashlane',
-    description: 'Log into Dashlane, go to account then admin. Add User. Type in new employees johnstone email'
+    category: 'JEN',
+    item_name: 'Configure JEN Display Name',
+    description: 'Display Name is First Name(SPACE)LastName. Fill out form. Confidential needs to be selected'
   },
 
-  // CDA Alarm
+  // 7. JU ONLINE
   {
-    category: 'CDA Alarm',
-    item_name: 'Setup CDA Alarm Code',
-    description: 'New Employee will give IT their preferred alarm code on Day 1 Training. During training IT will demonstrate how to use panel'
+    category: 'JU ONLINE',
+    item_name: 'Setup JU Online Account',
+    description: 'Username is johnstone email. Log into JU Online button and select ADMIN, go to Admin on the top right'
+  },
+  {
+    category: 'JU ONLINE',
+    item_name: 'Add Person to Directory',
+    description: 'Go to Directory then select People->Add Person. Use Johnsonsupply.com email'
+  },
+  {
+    category: 'JU ONLINE',
+    item_name: 'Configure JU Online Groups',
+    description: 'Assign appropriate groups (list provided in document)'
   },
 
-  // Salto's
-  {
-    category: 'Salto\'s',
-    item_name: 'Setup Salto\'s Access',
-    description: 'EC - Electronic access system setup'
-  },
-
-  // M365
-  {
-    category: 'M365',
-    item_name: 'Assign M365 License',
-    description: 'Assign appropriate license: F1, Business Basic, or Business Standard based on role'
-  },
-  {
-    category: 'M365',
-    item_name: 'Configure License Details',
-    description: 'F1=$1.66, Business Basic=$5.67, Business Standard=$11.80. All include F1 base license'
-  },
-
-  // MITS
-  {
-    category: 'MITS',
-    item_name: 'Setup MITS Account',
-    description: 'If sales, log into MITS with "Tony" credentials. If counter, use "Bridgeton" credentials from Dashlane'
-  },
-
-  // Additional Setup
+  // 8. Additional Setup
   {
     category: 'Additional Setup',
     item_name: 'Create AD User for Advantive',
@@ -137,6 +104,39 @@ const defaultChecklistItems = [
     category: 'Additional Setup',
     item_name: 'Send Welcome Email',
     description: 'Email password sheet to employee and Matt D.'
+  },
+
+  // 9. Salto's
+  {
+    category: 'Salto\'s',
+    item_name: 'Setup Salto\'s Access',
+    description: 'EC - Electronic access system setup'
+  },
+
+  // 10. CDA Alarm
+  {
+    category: 'CDA Alarm',
+    item_name: 'Setup CDA Alarm Code',
+    description: 'New Employee will give IT their preferred alarm code on Day 1 Training. During training IT will demonstrate how to use panel'
+  },
+
+  // UPG Navigator and Goodman
+  {
+    category: 'UPG Navigator',
+    item_name: 'Setup UPG Navigator Account',
+    description: 'Account, Manage Account, Add User. Fill out form. Check Goodman Toolkit and Amana Toolkit boxes'
+  },
+  {
+    category: 'UPG Navigator',
+    item_name: 'Configure Goodman Credentials',
+    description: 'Goodman User: (First name (.) Last name). Goodman Pass: welcome'
+  },
+
+  // MITS
+  {
+    category: 'MITS',
+    item_name: 'Setup MITS Account',
+    description: 'If sales, log into MITS with "Tony" credentials. If counter, use "Bridgeton" credentials from Dashlane'
   }
 ];
 

@@ -100,15 +100,20 @@ router.post('/', authenticateToken, validateSettings, asyncHandler(async (req, r
     });
   }
 
-  // For sensitive fields: if the incoming value is empty, keep the existing DB value
+  // For sensitive fields: if the incoming value is empty/blank, keep the existing DB value
+  // Trim password to handle whitespace, then check if it has actual content
+  const trimmedPassword = typeof password === 'string' ? password.trim() : password;
+  const hasPassword = trimmedPassword && trimmedPassword.length > 0;
+  
   const sanitizedData = {
     service: sanitizedService,
     api_key: api_key ? encrypt(sanitizeInput(api_key)) : (existing?.api_key || encrypt('')),
     api_secret: api_secret ? encrypt(sanitizeInput(api_secret)) : (existing?.api_secret || encrypt('')),
     base_url: sanitizeInput(base_url),
     username: sanitizeInput(username),
-    password: password ? encrypt(password) : (existing?.password || encrypt('')),
+    password: hasPassword ? encrypt(trimmedPassword) : (existing?.password || encrypt('')),
   };
+
 
   const query = `
     INSERT INTO settings (service, api_key, api_secret, base_url, username, password, updated_at)
