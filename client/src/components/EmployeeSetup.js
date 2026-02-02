@@ -98,7 +98,7 @@ function EmployeeSetup({ data }) {
 
   return (
     <Card className="employee-setup-card" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <CardContent sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} sx={{ flexShrink: 0 }}>
           <Typography variant="h6" component="h2">
             New Employee Setup
@@ -121,8 +121,9 @@ function EmployeeSetup({ data }) {
             No employee setup checklists
           </Typography>
         ) : (
-          <Grid container spacing={2} sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 2, flex: 1, overflow: 'auto' }}>
-            {checklists.map((checklist) => (
+          <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+            <Grid container spacing={2} sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 2 }}>
+              {checklists.map((checklist) => (
               <Card 
                 variant="outlined" 
                 key={checklist.id}
@@ -228,8 +229,9 @@ function EmployeeSetup({ data }) {
                     </Box>
                   </CardContent>
               </Card>
-            ))}
-          </Grid>
+              ))}
+            </Grid>
+          </Box>
         )}
 
       </CardContent>
