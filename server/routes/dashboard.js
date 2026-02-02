@@ -29,6 +29,7 @@ router.get('/data', asyncHandler(async (req, res) => {
     alerts: { sourceUrl: null, items: [], totalCount: 0 },
     assets: { sourceUrl: null, items: [], totalCount: 0 },
     powerbiInfo: null,
+    superOpsDoc: { sourceUrl: null, docUrl: null },
     employeeSetup: []
   };
 
@@ -56,6 +57,13 @@ router.get('/data', asyncHandler(async (req, res) => {
             results.openTickets = tickets;
             results.alerts = alertData;
             results.assets = assetData;
+            
+            // Build SuperOps documentation URL
+            const cleanUrl = setting.base_url.replace(/\/+$/, '');
+            results.superOpsDoc = {
+              sourceUrl: cleanUrl,
+              docUrl: `${cleanUrl}/#/rmm/itdoc/Password&&1001`
+            };
           }
           break;
         case 'automation-log':

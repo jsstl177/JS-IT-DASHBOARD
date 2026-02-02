@@ -13,6 +13,7 @@ import PowerBI from './components/PowerBI';
 import Alerts from './components/Alerts';
 import Assets from './components/Assets';
 import EmployeeSetup from './components/EmployeeSetup';
+import SuperOpsDoc from './components/SuperOpsDoc';
 import Settings from './components/Settings';
 import Login from './components/Login';
 import ThemeSelector from './components/ThemeSelector';
@@ -152,6 +153,7 @@ function App() {
   const proxmoxStatus = dashboardData.proxmoxStatus || {};
   const alerts = dashboardData.alerts || {};
   const assets = dashboardData.assets || {};
+  const superOpsDoc = dashboardData.superOpsDoc || {};
 
   // Map of module key → rendered component
   const moduleComponents = {
@@ -213,6 +215,9 @@ function App() {
     ),
     'powerbi': (
       <PowerBI data={dashboardData.powerbiInfo} />
+    ),
+    'superops-doc': (
+      <SuperOpsDoc data={superOpsDoc} />
     ),
   };
 

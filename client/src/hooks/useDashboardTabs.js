@@ -5,7 +5,7 @@ const OLD_LAYOUT_KEY = 'dashboardLayout';
 
 export const ALL_MODULE_KEYS = [
   'network', 'monthly-uptime', 'tickets', 'alerts', 'assets',
-  'employee-setup', 'logs', 'n8n', 'proxmox', 'powerbi'
+  'employee-setup', 'logs', 'n8n', 'proxmox', 'powerbi', 'superops-doc'
 ];
 
 export const MODULE_DISPLAY_NAMES = {
@@ -19,6 +19,7 @@ export const MODULE_DISPLAY_NAMES = {
   'n8n': 'N8N Executions',
   'proxmox': 'Proxmox Status',
   'powerbi': 'KPI / Power BI',
+  'superops-doc': 'SuperOps Documentation',
 };
 
 const DEFAULT_LAYOUT = [
@@ -32,6 +33,7 @@ const DEFAULT_LAYOUT = [
   { i: 'n8n', x: 6, y: 14, w: 6, h: 4 },
   { i: 'proxmox', x: 0, y: 18, w: 6, h: 4 },
   { i: 'powerbi', x: 6, y: 18, w: 6, h: 4 },
+  { i: 'superops-doc', x: 0, y: 22, w: 12, h: 10 },
 ];
 
 function generateId() {
