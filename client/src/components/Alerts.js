@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card, CardContent, Typography, List, ListItem, ListItemText,
-  Chip, Box, ListItemIcon
+  Chip, Box, ListItemIcon, IconButton, Button, CircularProgress
 } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 const SEVERITY_CONFIG = {
   critical: { color: '#F44336', label: 'Critical' },
@@ -29,7 +30,26 @@ function formatTime(dateStr) {
   }
 }
 
-function Alerts({ data, sourceUrl, totalCount }) {
+function Alerts({ data, sourceUrl, totalCount, onResolve }) {
+  const [resolving, setResolving] = useState({});
+
+  const handleResolve = async (alertId) => {
+    if (resolving[alertId]) return;
+    
+    setResolving(prev => ({ ...prev, [alertId]: true }));
+    
+    try {
+      console.log('Attempting to resolve alert:', alertId);
+      await onResolve(alertId);
+      console.log('Alert resolved successfully:', alertId);
+    } catch (error) {
+      console.error('Failed to resolve alert:', error);
+      // Don't remove the resolving state to show the error
+    } finally {
+      setResolving(prev => ({ ...prev, [alertId]: false }));
+    }
+  };
+
   return (
     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', p: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -66,6 +86,8 @@ function Alerts({ data, sourceUrl, totalCount }) {
             <List dense disablePadding>
               {[...data].sort((a, b) => new Date(b.createdTime || 0) - new Date(a.createdTime || 0)).map((alert) => {
                 const sStyle = getSeverityStyle(alert.severity);
+                const isResolving = resolving[alert.id];
+                
                 return (
                   <ListItem
                     key={alert.id}
@@ -87,7 +109,11 @@ function Alerts({ data, sourceUrl, totalCount }) {
                     }}
                   >
                     <ListItemIcon sx={{ minWidth: 32 }}>
-                      <WarningAmberIcon sx={{ fontSize: 18, color: sStyle.color }} />
+                      {isResolving ? (
+                        <CircularProgress size={24} sx={{ color: sStyle.color }} />
+                      ) : (
+                        <WarningAmberIcon sx={{ fontSize: 18, color: sStyle.color }} />
+                      )}
                     </ListItemIcon>
                     <ListItemText
                       primary={
@@ -118,9 +144,26 @@ function Alerts({ data, sourceUrl, totalCount }) {
                         </Typography>
                       }
                     />
-                    {alert.link && (
-                      <OpenInNewIcon sx={{ fontSize: 14, color: 'text.secondary', ml: 0.5, flexShrink: 0 }} />
-                    )}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1 }}>
+                      {isResolving ? (
+                        <CircularProgress size={20} />
+                      ) : (
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleResolve(alert.id);
+                          }}
+                          sx={{ color: '#4CAF50' }}
+                        >
+                          <CheckCircleIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                      {alert.link && (
+                        <OpenInNewIcon sx={{ fontSize: 14, color: 'text.secondary', flexShrink: 0 }} />
+                      )}
+                    </Box>
                   </ListItem>
                 );
               })}

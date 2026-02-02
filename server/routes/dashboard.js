@@ -1,6 +1,6 @@
 const express = require('express');
 const { getNetworkStatus, getMonthlyUptime } = require('../services/uptimeKuma');
-const { getOpenTickets, createTicket, getAlerts, getAssets } = require('../services/superOps');
+const { getOpenTickets, createTicket, getAlerts, getAssets, resolveAlert } = require('../services/superOps');
 const { getAutomationLogs } = require('../services/automationLog');
 const { getWorkflowExecutions } = require('../services/n8n');
 const { getProxmoxStatus } = require('../services/proxmox');
@@ -188,6 +188,27 @@ router.post('/create-case', asyncHandler(async (req, res) => {
 
   logger.info(`Case created in SuperOps for customer: ${customer}, ticket: ${ticket.displayId}`);
   res.json({ success: true, ticket });
+}));
+
+// Resolve alert via SuperOps API
+router.post('/resolve-alert', asyncHandler(async (req, res) => {
+  const { alertId } = req.body;
+
+  if (!alertId) {
+    return res.status(400).json({ error: 'Alert ID is required' });
+  }
+
+  const settings = await getSettingsFromDB();
+  const superops = settings.find(s => s.service === 'superops');
+
+  if (!superops || !superops.base_url || !superops.api_key) {
+    return res.status(400).json({ error: 'SuperOps is not configured. Please add SuperOps settings first.' });
+  }
+
+  const resolvedAlert = await resolveAlert(superops.base_url, superops.api_key, alertId);
+
+  logger.info(`Alert resolved: ${alertId}`);
+  res.json({ success: true, alert: resolvedAlert });
 }));
 
 module.exports = router;

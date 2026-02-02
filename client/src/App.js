@@ -155,6 +155,26 @@ function App() {
   const assets = dashboardData.assets || {};
   const superOpsDoc = dashboardData.superOpsDoc || {};
 
+  const [resolvingAlerts, setResolvingAlerts] = useState(new Set());
+
+  const handleResolveAlert = useCallback(async (alertId) => {
+    try {
+      const response = await axios.post('/api/dashboard/resolve-alert', { alertId });
+      if (response.data.success) {
+        setResolvingAlerts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(alertId);
+          return newSet;
+        });
+        // Refresh dashboard data to update the alerts list
+        fetchDashboardData();
+      }
+    } catch (error) {
+      console.error('Failed to resolve alert:', error);
+      throw error;
+    }
+  }, [fetchDashboardData]);
+
   // Map of module key → rendered component
   const moduleComponents = {
     'network': (
@@ -182,6 +202,7 @@ function App() {
         data={alerts.items || []}
         sourceUrl={alerts.sourceUrl}
         totalCount={alerts.totalCount || 0}
+        onResolve={handleResolveAlert}
       />
     ),
     'assets': (

@@ -33,14 +33,10 @@ function Assets({ data, sourceUrl, totalCount }) {
     return data.filter(asset =>
       (asset.name || '').toLowerCase().includes(q) ||
       (asset.hostName || '').toLowerCase().includes(q) ||
-      (asset.client || '').toLowerCase().includes(q) ||
-      (asset.site || '').toLowerCase().includes(q) ||
-      (asset.manufacturer || '').toLowerCase().includes(q) ||
-      (asset.model || '').toLowerCase().includes(q) ||
-      (asset.serialNumber || '').toLowerCase().includes(q) ||
+      (asset.lastLoggedInBy || '').toLowerCase().includes(q) ||
       (asset.platform || '').toLowerCase().includes(q) ||
       (asset.status || '').toLowerCase().includes(q) ||
-      (asset.assetClass || '').toLowerCase().includes(q)
+      (asset.patchStatus || '').toLowerCase().includes(q)
     );
   }, [data, search]);
 
@@ -98,11 +94,10 @@ function Assets({ data, sourceUrl, totalCount }) {
                   <TableRow>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Name</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Host</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Client</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Site</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Type</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Last Logged In By</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Platform</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Patch Status</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Last Seen</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', width: 30 }}></TableCell>
                   </TableRow>
@@ -124,9 +119,7 @@ function Assets({ data, sourceUrl, totalCount }) {
                     >
                       <TableCell>{asset.name || '-'}</TableCell>
                       <TableCell>{asset.hostName || '-'}</TableCell>
-                      <TableCell>{asset.client || '-'}</TableCell>
-                      <TableCell>{asset.site || '-'}</TableCell>
-                      <TableCell>{asset.assetClass || '-'}</TableCell>
+                      <TableCell>{asset.lastLoggedInBy || '-'}</TableCell>
                       <TableCell>{asset.platform || '-'}</TableCell>
                       <TableCell>
                         <Chip
@@ -136,6 +129,7 @@ function Assets({ data, sourceUrl, totalCount }) {
                           sx={{ fontSize: '0.7rem', height: 20 }}
                         />
                       </TableCell>
+                      <TableCell>{asset.patchStatus || '-'}</TableCell>
                       <TableCell>{formatTime(asset.lastCommunicatedTime)}</TableCell>
                       <TableCell>
                         {asset.link && <OpenInNewIcon sx={{ fontSize: 14, color: 'text.secondary' }} />}

@@ -96,7 +96,7 @@ async function getOpenTickets(tenantUrl, apiKey) {
       requester: ticket.requester?.name || ticket.requester || null,
       client: ticket.client?.name || ticket.client || null,
       site: ticket.site?.name || ticket.site || null,
-      link: tenantUrl.replace(/\/+$/, '')
+      link: `${tenantUrl.replace(/\/+$/, '')}/#/tickets/${ticket.ticketId}/ticket`
     }));
 
     return {
@@ -241,6 +241,15 @@ query getAlertList($input: ListInfoInput!) {
   }
 }`;
 
+const RESOLVE_ALERT_MUTATION = `
+mutation resolveAlert($input: ResolveAlertInput!) {
+  resolveAlert(input: $input) {
+    id
+    status
+    message
+  }
+}`;
+
 async function getAlerts(tenantUrl, apiKey) {
   const subdomain = extractSubdomain(tenantUrl);
 
@@ -308,6 +317,69 @@ async function getAlerts(tenantUrl, apiKey) {
       status: error.response?.status
     });
     return { sourceUrl: tenantUrl, items: [], totalCount: 0 };
+  }
+}
+
+async function resolveAlert(tenantUrl, apiKey, alertId) {
+  const subdomain = extractSubdomain(tenantUrl);
+
+  try {
+    logger.info('Attempting to resolve alert in SuperOps', {
+      alertId,
+      tenantUrl,
+      subdomain
+    });
+
+    const response = await axios.post(
+      SUPEROPS_API_URL,
+      {
+        query: RESOLVE_ALERT_MUTATION,
+        variables: {
+          input: {
+            id: alertId,
+            status: 'Resolved'
+          }
+        }
+      },
+      {
+        timeout: 10000,
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'CustomerSubDomain': subdomain,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    logger.info('SuperOps API response for resolveAlert', {
+      alertId,
+      hasErrors: !!response.data.errors,
+      hasData: !!response.data.data
+    });
+
+    if (response.data.errors) {
+      logger.error('SuperOps resolveAlert errors', {
+        service: 'superops',
+        errors: response.data.errors
+      });
+      throw new Error(response.data.errors.map(e => e.message).join('; '));
+    }
+
+    const resolvedAlert = response.data.data?.resolveAlert;
+    if (!resolvedAlert) {
+      throw new Error('SuperOps returned no resolved alert data');
+    }
+
+    logger.info(`Alert resolved successfully in SuperOps: ${alertId}`);
+    return resolvedAlert;
+  } catch (error) {
+    logger.error('SuperOps resolveAlert error', {
+      service: 'superops',
+      error: error.message,
+      status: error.response?.status,
+      alertId
+    });
+    throw error;
   }
 }
 
@@ -443,4 +515,4 @@ async function getAssets(tenantUrl, apiKey) {
   }
 }
 
-module.exports = { getOpenTickets, createTicket, extractSubdomain, getAlerts, getAssets };
+module.exports = { getOpenTickets, createTicket, extractSubdomain, getAlerts, getAssets, resolveAlert };
