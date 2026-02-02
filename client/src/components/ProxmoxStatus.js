@@ -202,6 +202,55 @@ function NodeDetailDialog({ node, open, onClose }) {
             </TableContainer>
           </>
         )}
+
+        {/* Services */}
+        {node.services && node.services.length > 0 && (
+          <>
+            <Typography variant="subtitle2" sx={{ mt: 1, mb: 0.5 }}>
+              Services ({node.services.length})
+            </Typography>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>State</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Unit-State</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {node.services.map((service, idx) => (
+                    <TableRow key={service.name || idx} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                      <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                        {service.name || service.service || '—'}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={service.state || 'unknown'}
+                          size="small"
+                          color={service.state === 'running' ? 'success' : service.state === 'stopped' ? 'default' : 'warning'}
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={service['unit-state'] || service.unitState || 'unknown'}
+                          size="small"
+                          color={service['unit-state'] === 'active' || service.unitState === 'active' ? 'success' : 'default'}
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell sx={{ fontSize: '0.85rem' }}>
+                        {service.desc || service.description || '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
+        )}
       </DialogContent>
       <DialogActions>
         {node.link && (

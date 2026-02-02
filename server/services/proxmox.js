@@ -35,11 +35,12 @@ async function getProxmoxStatus(baseUrl, username, password, nodeNames = []) {
 
     for (const nodeName of nodesToCheck) {
       try {
-        const [nodeStatus, qemuStatus, lxcStatus, storageStatus] = await Promise.all([
+        const [nodeStatus, qemuStatus, lxcStatus, storageStatus, servicesStatus] = await Promise.all([
           authAxios.get(`/api2/json/nodes/${nodeName}/status`),
           authAxios.get(`/api2/json/nodes/${nodeName}/qemu`),
           authAxios.get(`/api2/json/nodes/${nodeName}/lxc`),
           authAxios.get(`/api2/json/nodes/${nodeName}/storage`),
+          authAxios.get(`/api2/json/nodes/${nodeName}/services`),
         ]);
 
         results.push({
@@ -48,7 +49,9 @@ async function getProxmoxStatus(baseUrl, username, password, nodeNames = []) {
           vms: qemuStatus.data.data || [],
           containers: lxcStatus.data.data || [],
           storage: storageStatus.data.data || [],
-          link: `${baseUrl}#v1:0:=node%2F${nodeName}`
+          services: servicesStatus.data.data || [],
+          link: `${baseUrl}#v1:0:=node%2F${nodeName}:4:5::::8::`,
+          servicesLink: `${baseUrl}#v1:0:=node%2F${nodeName}:4:5::::8::`
         });
       } catch (nodeError) {
         logger.error(`Error fetching Proxmox node ${nodeName}`, { service: 'proxmox', node: nodeName, error: nodeError.message });

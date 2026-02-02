@@ -395,7 +395,7 @@ async function getAssets(tenantUrl, apiKey) {
         platform: asset.platform,
         status: asset.status,
         lastCommunicatedTime: asset.lastCommunicatedTime,
-        link: tenantUrl.replace(/\/+$/, '')
+        link: `${tenantUrl.replace(/\/+$/, '')}/#/rmm/asset/details/${asset.assetId}`
       }));
 
       allAssets.push(...assets);
