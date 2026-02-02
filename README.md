@@ -13,16 +13,18 @@ A production-ready, modular, Docker-deployable web dashboard that aggregates IT 
 - **Production Ready**: Comprehensive logging, error handling, rate limiting, and security headers
 - **Unit Testing**: Backend API testing with Jest and Supertest
 - **Input Validation**: Sanitized inputs and comprehensive validation middleware
+- **Customizable Columns**: Configure which columns to display in the Assets module and their order
 
 ## Supported Services
 
 1. **Network Status** (Uptime Kuma) - Shows only down/alerting monitors
 2. **Open Cases** (SuperOps) - Displays open tickets
-3. **New Employee Setup** - Kanban-style checklist management for employee onboarding
-4. **Automation Logs** - Custom log endpoint
-5. **N8N Workflow History** - Recent workflow executions
-6. **Proxmox Status** - Virtualization host information
-7. **Power BI KPI** - Embedded business intelligence reports
+3. **Assets** (SuperOps) - Asset inventory with customizable column configuration
+4. **New Employee Setup** - Kanban-style checklist management for employee onboarding
+5. **Automation Logs** - Custom log endpoint
+6. **N8N Workflow History** - Recent workflow executions
+7. **Proxmox Status** - Virtualization host information
+8. **Power BI KPI** - Embedded business intelligence reports
 
 ## New Employee Setup Module
 
@@ -46,6 +48,48 @@ The dashboard includes a specialized Kanban-style card system for tracking new e
 - ✅ **Category Organization**: Items grouped by system/category with expandable sections
 - ✅ **Status Management**: Automatic status updates (Pending → In Progress → Completed)
 - ✅ **Ticket Integration**: Link to existing IT tickets for tracking
+
+## Asset Module Configuration
+
+The Assets module provides a fully customizable table view with configurable columns stored in MariaDB. This feature allows you to customize which asset fields are displayed and their order according to your preferences.
+
+### Available Asset Fields
+
+1. **Name** - Asset name (default visible)
+2. **Host** - Hostname (default visible)
+3. **Last Logged In By** - Last logged-in user (default visible)
+4. **Platform** - Operating system/platform (default visible)
+5. **Status** - Asset status with color-coded chips (default visible)
+6. **Patch Status** - Current patch status (default visible)
+7. **Last Seen** - Last communication time (default visible)
+8. **Asset Class** - Asset classification (optional)
+9. **Client** - Associated client (optional)
+10. **Site** - Physical location/site (optional)
+11. **Serial Number** - Device serial number (optional)
+12. **Manufacturer** - Device manufacturer (optional)
+13. **Model** - Device model (optional)
+
+### Features:
+- ✅ **Dynamic Column Rendering**: Table columns render based on user preferences
+- ✅ **Persistent Storage**: Column configurations stored in MariaDB database
+- ✅ **Easy Configuration**: Click the gear icon to open configuration dialog
+- ✅ **Show/Hide Columns**: Check/uncheck boxes to toggle column visibility
+- ✅ **Column Reordering**: Use drag handles to reorder columns
+- ✅ **Reset to Defaults**: Restore original column configuration anytime
+- ✅ **Enhanced Search**: Search across all available asset fields
+- ✅ **JWT Secured**: All column configuration endpoints require authentication
+
+### Usage
+
+1. **Access Configuration**: Click the gear icon in the Assets module header
+2. **Toggle Visibility**: Check/uncheck boxes next to column names
+3. **Reorder Columns**: Use the drag handle icons to reorder columns up/down
+4. **Save Changes**: Click "Save" to apply your configuration
+5. **Reset Defaults**: Click "Reset to Defaults" to restore original settings
+
+### Search Functionality
+
+The search bar now searches across all 13 available asset fields, not just visible columns, making it easy to find assets regardless of your current column configuration.
 
 ## Quick Start
 
@@ -133,6 +177,11 @@ Access the settings page (password: admin123 by default) to configure API endpoi
 - `PATCH /api/employee-setup/:id/status` - Update checklist status
 - `DELETE /api/employee-setup/:id` - Delete checklist
 
+### Asset Column Configuration
+- `GET /api/asset-columns/columns` - Get column configuration for user (authenticated)
+- `POST /api/asset-columns/columns` - Save column configuration (authenticated)
+- `POST /api/asset-columns/columns/reset` - Reset column configuration to defaults (authenticated)
+
 ### System
 - `GET /health` - Health check endpoint
 
@@ -164,18 +213,23 @@ Access the settings page (password: admin123 by default) to configure API endpoi
 
 ## Security
 
-- API credentials are stored encrypted in SQLite database
-- Settings access requires authentication
-- JWT tokens for session management
+- API credentials are stored encrypted in MariaDB database
+- User configurations (column preferences) stored in MariaDB
+- Settings access requires JWT authentication
+- All asset column configuration endpoints require authentication
+- Input validation on all endpoints
+- Rate limiting on API routes
+- Security headers configured with Helmet
 - HTTPS recommended for production deployment
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Database errors**: Ensure write permissions for the database file location
+1. **Database errors**: Ensure MariaDB container is running and accessible
 2. **API connection failures**: Check network connectivity and API credentials
 3. **Build failures**: Ensure all dependencies are installed and Node.js version is compatible
+4. **Column configuration not saving**: Verify JWT authentication is working and check server logs
 
 ### Logs
 

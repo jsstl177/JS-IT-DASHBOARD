@@ -399,6 +399,8 @@ query getAssetList($input: ListInfoInput!) {
       platform
       status
       lastCommunicatedTime
+      loggedInUser
+      patchStatus
     }
     listInfo {
       totalCount
@@ -467,6 +469,8 @@ async function getAssets(tenantUrl, apiKey) {
         platform: asset.platform,
         status: asset.status,
         lastCommunicatedTime: asset.lastCommunicatedTime,
+        loggedInUser: asset.loggedInUser || null,
+        patchStatus: asset.patchStatus || null,
         link: `${tenantUrl.replace(/\/+$/, '')}/#/rmm/asset/details/${asset.assetId}`
       }));
 

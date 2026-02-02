@@ -108,6 +108,7 @@ app.use(express.static(path.join(__dirname, 'client/build'), {
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/employee-setup', require('./routes/employeeSetup'));
+app.use('/api/asset-columns', require('./routes/assetColumns'));
 
 // Enhanced health check endpoint
 app.get('/health', asyncHandler(async (req, res) => {
