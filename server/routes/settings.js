@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
-const { validateLogin, validateSettings, sanitizeInput } = require('../middleware/validation');
+const { validateLogin, validateSettings, validatePasswordChange, sanitizeInput } = require('../middleware/validation');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { encrypt, decrypt } = require('../utils/crypto');
 const { dbGet, dbAll, dbRun } = require('../utils/dbHelpers');
@@ -60,6 +60,37 @@ router.post('/login', loginLimiter, validateLogin, asyncHandler(async (req, res)
   });
 
   res.json({ token });
+}));
+
+// Change password endpoint (requires authentication)
+router.post('/change-password', authenticateToken, validatePasswordChange, asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.id;
+
+  // Get current user
+  const user = await dbGet('SELECT * FROM users WHERE id = ?', [userId]);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  // Verify current password
+  const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
+  if (!isValidPassword) {
+    logger.warn('Failed password change attempt - invalid current password', { userId, ip: req.ip });
+    return res.status(401).json({ error: 'Current password is incorrect' });
+  }
+
+  // Hash new password
+  const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+  // Update password in database
+  await dbRun(
+    'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [newPasswordHash, userId]
+  );
+
+  logger.info('Password changed successfully', { userId });
+  res.json({ message: 'Password changed successfully' });
 }));
 
 // Get all settings

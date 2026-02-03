@@ -8,7 +8,7 @@ function PowerBI({ data }) {
   return (
     <Card className="powerbi-card">
       <CardContent>
-        <Typography variant="h6" component="h2" sx={{ fontSize: '36pt', fontWeight: 'bold' }}>
+        <Typography variant="h6" component="h2" sx={{ fontSize: '24pt', fontWeight: 'bold' }}>
           KPI Information
         </Typography>
         {sourceUrl ? (

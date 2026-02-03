@@ -34,6 +34,7 @@ function App() {
   const [retrying, setRetrying] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('theme') || 'light');
 
   const {
@@ -60,28 +61,67 @@ function App() {
   const [refreshSeconds, setRefreshSeconds] = useState(getRefreshSeconds());
   const refreshSecondsRef = useRef(getRefreshSeconds());
 
+  // Check authentication status on app load
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      // Decode token to get user info
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        const decoded = JSON.parse(jsonPayload);
+        
+        // Check if token is expired
+        if (decoded.exp && decoded.exp * 1000 > Date.now()) {
+          setIsLoggedIn(true);
+          setCurrentUser({ id: decoded.id, username: decoded.username });
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+          // Token expired
+          localStorage.removeItem('authToken');
+          delete axios.defaults.headers.common['Authorization'];
+        }
+      } catch (e) {
+        console.error('Invalid token', e);
+        localStorage.removeItem('authToken');
+        delete axios.defaults.headers.common['Authorization'];
+      }
+    }
+    setLoading(false);
+  }, []);
+
   const fetchDashboardData = useCallback(async () => {
+    if (!isLoggedIn) return;
+    
     try {
       const response = await axios.get('/api/dashboard/data');
       setDashboardData(response.data);
       setError(null);
-      setLoading(false);
       setRetrying(false);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data. Retrying...');
-      setLoading(false);
-
-      // Auto-retry after 10 seconds
-      setRetrying(true);
-      setTimeout(() => {
-        fetchDashboardData();
-      }, 10000);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        // Token expired or invalid
+        handleLogout();
+        setError('Session expired. Please login again.');
+      } else {
+        setError('Failed to load dashboard data. Retrying...');
+        // Auto-retry after 10 seconds
+        setRetrying(true);
+        setTimeout(() => {
+          fetchDashboardData();
+        }, 10000);
+      }
     }
-  }, []);
+  }, [isLoggedIn]);
 
   // Data fetch interval — restarts when refreshSeconds changes
   useEffect(() => {
+    if (!isLoggedIn) return;
+    
     fetchDashboardData();
     setCountdown(refreshSeconds);
 
@@ -91,7 +131,7 @@ function App() {
     }, refreshSeconds * 1000);
 
     return () => clearInterval(dataInterval);
-  }, [fetchDashboardData, refreshSeconds]);
+  }, [fetchDashboardData, refreshSeconds, isLoggedIn]);
 
   // 1-second tick for the countdown display
   useEffect(() => {
@@ -129,15 +169,19 @@ function App() {
     };
   }, []);
 
-  const handleLogin = (token) => {
+  const handleLogin = (token, username) => {
     localStorage.setItem('authToken', token);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     setIsLoggedIn(true);
-    setShowSettings(true);
+    setCurrentUser({ username });
+    setShowSettings(false);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
+    delete axios.defaults.headers.common['Authorization'];
     setIsLoggedIn(false);
+    setCurrentUser(null);
     setShowSettings(false);
   };
 
@@ -245,8 +289,14 @@ function App() {
     ),
   };
 
-  if (loading) {
-    return <div className="loading">Loading dashboard...</div>;
+  // If not logged in, show login screen only
+  if (!isLoggedIn) {
+    return (
+      <ThemeProvider theme={themes[currentTheme] || themes.light}>
+        <CssBaseline />
+        <Login onLogin={handleLogin} />
+      </ThemeProvider>
+    );
   }
 
   return (
@@ -263,13 +313,14 @@ function App() {
           </div>
           <span className="refresh-countdown">Refresh in {countdown}s</span>
           <div className="header-actions">
+            <span style={{ marginRight: '10px', fontSize: '14px' }}>
+              Welcome, {currentUser?.username}
+            </span>
             <ThemeSelector currentTheme={currentTheme} onThemeChange={handleThemeChange} />
             <button onClick={() => setShowSettings(!showSettings)}>
               {showSettings ? 'Dashboard' : 'Settings'}
             </button>
-            {isLoggedIn && (
-              <button onClick={handleLogout}>Logout</button>
-            )}
+            <button onClick={handleLogout}>Logout</button>
           </div>
         </header>
 
@@ -287,11 +338,10 @@ function App() {
 
         <main>
           {showSettings ? (
-            isLoggedIn ? (
-              <Settings onClose={() => setShowSettings(false)} />
-            ) : (
-              <Login onLogin={handleLogin} />
-            )
+            <Settings 
+              onClose={() => setShowSettings(false)} 
+              isAdmin={currentUser?.username === 'admin'}
+            />
           ) : (
             <>
               <TabBar

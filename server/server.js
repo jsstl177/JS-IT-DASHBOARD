@@ -104,11 +104,33 @@ app.use(express.static(path.join(__dirname, 'client/build'), {
   }
 }));
 
-// Routes
+// Authentication middleware for protected routes
+const jwt = require('jsonwebtoken');
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+// Apply authentication to all dashboard and data routes
+app.use('/api/dashboard', authenticateToken, require('./routes/dashboard'));
+app.use('/api/employee-setup', authenticateToken, require('./routes/employeeSetup'));
+app.use('/api/asset-columns', authenticateToken, require('./routes/assetColumns'));
+
+// Settings and users routes handle their own authentication internally
 app.use('/api/settings', require('./routes/settings'));
-app.use('/api/dashboard', require('./routes/dashboard'));
-app.use('/api/employee-setup', require('./routes/employeeSetup'));
-app.use('/api/asset-columns', require('./routes/assetColumns'));
+app.use('/api/users', require('./routes/users'));
 
 // Enhanced health check endpoint
 app.get('/health', asyncHandler(async (req, res) => {

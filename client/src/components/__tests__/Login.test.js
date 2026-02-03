@@ -24,7 +24,7 @@ describe('Login', () => {
     expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
-    expect(screen.getByText('Settings Login')).toBeInTheDocument();
+    expect(screen.getByText('Dashboard Login')).toBeInTheDocument();
   });
 
   it('calls onLogin with token on successful submit', async () => {

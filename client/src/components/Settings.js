@@ -7,6 +7,7 @@ import {
 import { Delete as DeleteIcon, Add as AddIcon, Edit as EditIcon, PlayArrow as PlayArrowIcon } from '@mui/icons-material';
 import MenuItem from '@mui/material/MenuItem';
 import axios from 'axios';
+import UserManagement from './UserManagement';
 
 const SERVICE_URL_HINTS = {
   'uptime-kuma': 'https://uptime-kuma.example.com',
@@ -45,7 +46,7 @@ const PROXMOX_FIELD_LABELS = {
 
 const REFRESH_OPTIONS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
 
-function Settings({ onClose }) {
+function Settings({ onClose, isAdmin }) {
   const [settings, setSettings] = useState([]);
   const [newSetting, setNewSetting] = useState({
     service: '',
@@ -66,6 +67,16 @@ function Settings({ onClose }) {
     const stored = localStorage.getItem('refreshInterval');
     return stored ? Number(stored) : 60;
   });
+
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
 
   useEffect(() => {
     fetchSettings();
@@ -187,6 +198,102 @@ function Settings({ onClose }) {
     };
     return names[service] || service;
   };
+
+  const handlePasswordChange = async () => {
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    // Validate passwords match
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    // Validate new password length
+    if (passwordData.newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters long');
+      return;
+    }
+
+    setPasswordLoading(true);
+
+    try {
+      const token = localStorage.getItem('authToken');
+      await axios.post('/api/settings/change-password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setPasswordSuccess('Password changed successfully');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      setPasswordError(err.response?.data?.error || 'Failed to change password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const PasswordChangeCard = () => (
+    <Card sx={{ mt: 3 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Change Admin Password
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Current Password"
+              type="password"
+              value={passwordData.currentPassword}
+              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="New Password"
+              type="password"
+              value={passwordData.newPassword}
+              onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+              helperText="Minimum 8 characters"
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Confirm New Password"
+              type="password"
+              value={passwordData.confirmPassword}
+              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handlePasswordChange}
+              disabled={passwordLoading || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+            >
+              {passwordLoading ? 'Changing...' : 'Change Password'}
+            </Button>
+          </Grid>
+        </Grid>
+        {passwordError && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {passwordError}
+          </Alert>
+        )}
+        {passwordSuccess && (
+          <Alert severity="success" sx={{ mt: 2 }}>
+            {passwordSuccess}
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div style={{ padding: '20px' }}>
@@ -375,6 +482,10 @@ function Settings({ onClose }) {
           </TextField>
         </CardContent>
       </Card>
+
+      <PasswordChangeCard />
+
+      <UserManagement isAdmin={isAdmin} />
 
       {error && (
         <Alert severity="error" style={{ marginTop: '20px' }}>

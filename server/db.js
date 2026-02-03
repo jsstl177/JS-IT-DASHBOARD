@@ -35,7 +35,8 @@ async function initializeDatabase() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(255) UNIQUE,
         password_hash TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )`,
 
       `CREATE TABLE IF NOT EXISTS employee_setup_checklist (
@@ -79,6 +80,17 @@ async function initializeDatabase() {
 
     for (const query of tableQueries) {
       await pool.execute(query);
+    }
+
+    // Migration: Add updated_at column to users table if it doesn't exist
+    try {
+      await pool.execute(`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      `);
+    } catch (err) {
+      // Column might already exist, continue
+      console.log('Note: users.updated_at column migration attempted');
     }
 
     console.log('Database tables initialized successfully.');

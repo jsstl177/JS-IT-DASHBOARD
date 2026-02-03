@@ -19,7 +19,7 @@ function Login({ onLogin }) {
         password
       });
 
-      onLogin(response.data.token);
+      onLogin(response.data.token, username);
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     } finally {
@@ -32,7 +32,7 @@ function Login({ onLogin }) {
       <Card style={{ minWidth: '300px' }}>
         <CardContent>
           <Typography variant="h5" component="h2" gutterBottom>
-            Settings Login
+            Dashboard Login
           </Typography>
           <form onSubmit={handleSubmit}>
             <TextField

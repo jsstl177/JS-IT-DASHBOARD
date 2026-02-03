@@ -133,6 +133,89 @@ const validateEmployeeSetup = (req, res, next) => {
   next();
 };
 
+const validatePasswordChange = (req, res, next) => {
+  const { currentPassword, newPassword } = req.body;
+
+  const errors = [];
+
+  if (!currentPassword || typeof currentPassword !== 'string' || currentPassword.length === 0) {
+    errors.push('Current password is required');
+  }
+
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length === 0) {
+    errors.push('New password is required');
+  } else if (newPassword.length < 8) {
+    errors.push('New password must be at least 8 characters long');
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: errors
+    });
+  }
+
+  next();
+};
+
+const validateUserCreate = (req, res, next) => {
+  const { username, password } = req.body;
+
+  const errors = [];
+
+  if (!username || typeof username !== 'string' || username.trim().length === 0) {
+    errors.push('Username is required');
+  } else if (username.trim().length < 3) {
+    errors.push('Username must be at least 3 characters long');
+  } else if (username.trim().length > 50) {
+    errors.push('Username must be no more than 50 characters');
+  }
+
+  if (!password || typeof password !== 'string' || password.length === 0) {
+    errors.push('Password is required');
+  } else if (password.length < 8) {
+    errors.push('Password must be at least 8 characters long');
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: errors
+    });
+  }
+
+  next();
+};
+
+const validateUserUpdate = (req, res, next) => {
+  const { username, password } = req.body;
+
+  const errors = [];
+
+  if (username !== undefined) {
+    if (typeof username !== 'string' || username.trim().length === 0) {
+      errors.push('Username cannot be empty');
+    } else if (username.trim().length < 3) {
+      errors.push('Username must be at least 3 characters long');
+    } else if (username.trim().length > 50) {
+      errors.push('Username must be no more than 50 characters');
+    }
+  }
+
+  if (password !== undefined && password.length > 0 && password.length < 8) {
+    errors.push('Password must be at least 8 characters long');
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: errors
+    });
+  }
+
+  next();
+};
+
 const validateStatus = (status) => {
   return ALLOWED_STATUSES.includes(status);
 };
@@ -161,6 +244,9 @@ module.exports = {
   validateSettings,
   validateLogin,
   validateEmployeeSetup,
+  validatePasswordChange,
+  validateUserCreate,
+  validateUserUpdate,
   validateStatus,
   sanitizeInput
 };

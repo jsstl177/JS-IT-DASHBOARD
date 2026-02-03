@@ -29,7 +29,7 @@ function ProxmoxStatus({ data, sourceUrl }) {
           justifyContent: 'space-between', 
           mb: 1 
         }}>
-          <Typography 
+            <Typography 
             variant="h6" 
             component="h2" 
             sx={{ 
