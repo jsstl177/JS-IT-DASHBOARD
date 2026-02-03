@@ -242,12 +242,8 @@ query getAlertList($input: ListInfoInput!) {
 }`;
 
 const RESOLVE_ALERT_MUTATION = `
-mutation resolveAlert($input: ResolveAlertInput!) {
-  resolveAlert(input: $input) {
-    id
-    status
-    message
-  }
+mutation resolveAlerts($input: [ResolveAlertInput]) {
+  resolveAlerts(input: $input)
 }`;
 
 async function getAlerts(tenantUrl, apiKey) {
@@ -335,10 +331,7 @@ async function resolveAlert(tenantUrl, apiKey, alertId) {
       {
         query: RESOLVE_ALERT_MUTATION,
         variables: {
-          input: {
-            id: alertId,
-            status: 'Resolved'
-          }
+          input: [{ id: alertId }]
         }
       },
       {
@@ -365,13 +358,13 @@ async function resolveAlert(tenantUrl, apiKey, alertId) {
       throw new Error(response.data.errors.map(e => e.message).join('; '));
     }
 
-    const resolvedAlert = response.data.data?.resolveAlert;
-    if (!resolvedAlert) {
-      throw new Error('SuperOps returned no resolved alert data');
+    const success = response.data.data?.resolveAlerts;
+    if (success !== true) {
+      throw new Error('SuperOps failed to resolve alert');
     }
 
     logger.info(`Alert resolved successfully in SuperOps: ${alertId}`);
-    return resolvedAlert;
+    return { id: alertId, success: true };
   } catch (error) {
     logger.error('SuperOps resolveAlert error', {
       service: 'superops',

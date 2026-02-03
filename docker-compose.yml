@@ -1,6 +1,8 @@
 services:
   dashboard:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
     ports:
       - "5001:5000"
     env_file: .env

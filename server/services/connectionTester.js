@@ -54,15 +54,46 @@ async function testN8N(config) {
 }
 
 async function testProxmox(config) {
-  const httpsAgent = new https.Agent({ rejectUnauthorized: false });
-  await axios.post(`${config.base_url}/api2/json/access/ticket`, {
-    username: config.username,
-    password: config.password
-  }, {
-    httpsAgent,
-    timeout: SERVICE_TIMEOUT
+  const httpsAgent = new https.Agent({ 
+    rejectUnauthorized: false,
+    secureProtocol: 'TLSv1_2_method'
   });
-  return { success: true, message: 'Proxmox authentication successful.' };
+  
+  // Support both legacy username/password and new API token authentication
+  if (config.api_key && config.api_secret) {
+    // API Token authentication: PVEAPIToken=USER@REALM!TOKENID=UUID
+    const apiToken = `PVEAPIToken=${config.api_key}=${config.api_secret}`;
+    
+    const response = await axios.get(`${config.base_url}/api2/json/cluster/status`, {
+      httpsAgent,
+      timeout: SERVICE_TIMEOUT,
+      headers: {
+        'Authorization': apiToken
+      }
+    });
+    
+    if (response.data && response.data.data) {
+      const nodes = response.data.data.filter(item => item.type === 'node');
+      return { 
+        success: true, 
+        message: `Proxmox API token authenticated successfully. Found ${nodes.length} node(s) in cluster.` 
+      };
+    }
+    
+    return { success: true, message: 'Proxmox API token authenticated successfully.' };
+  } else if (config.username && config.password) {
+    // Legacy username/password authentication
+    await axios.post(`${config.base_url}/api2/json/access/ticket`, {
+      username: config.username,
+      password: config.password
+    }, {
+      httpsAgent,
+      timeout: SERVICE_TIMEOUT
+    });
+    return { success: true, message: 'Proxmox username/password authentication successful.' };
+  } else {
+    throw new Error('Proxmox requires either API Token (api_key + api_secret) or username/password credentials.');
+  }
 }
 
 function testPowerBI(config) {

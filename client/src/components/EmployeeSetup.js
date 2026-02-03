@@ -100,7 +100,7 @@ function EmployeeSetup({ data }) {
     <Card className="employee-setup-card" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} sx={{ flexShrink: 0 }}>
-          <Typography variant="h6" component="h2">
+          <Typography variant="h6" component="h2" sx={{ fontSize: '36pt', fontWeight: 'bold' }}>
             New Employee Setup
           </Typography>
           <Button

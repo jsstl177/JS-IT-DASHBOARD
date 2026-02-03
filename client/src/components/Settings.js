@@ -35,6 +35,14 @@ const SMTP_FIELD_LABELS = {
   password: 'SMTP Password'
 };
 
+const PROXMOX_FIELD_LABELS = {
+  base_url: 'Proxmox Host URL',
+  api_key: 'API Token ID',
+  api_secret: 'API Token Secret',
+  username: 'Username (legacy)',
+  password: 'Password (legacy)'
+};
+
 const REFRESH_OPTIONS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
 
 function Settings({ onClose }) {
@@ -277,16 +285,31 @@ function Settings({ onClose }) {
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label={newSetting.service === 'smtp' ? SMTP_FIELD_LABELS.api_key : 'API Key'}
-                    placeholder={newSetting.service === 'smtp' ? '587' : ''}
+                    label={newSetting.service === 'smtp' ? SMTP_FIELD_LABELS.api_key : newSetting.service === 'proxmox' ? PROXMOX_FIELD_LABELS.api_key : 'API Key'}
+                    placeholder={newSetting.service === 'smtp' ? '587' : newSetting.service === 'proxmox' ? 'root@pam!dashboard' : ''}
+                    helperText={newSetting.service === 'proxmox' ? 'Format: USER@REALM!TOKENID (e.g., root@pam!dashboard)' : ''}
                     value={newSetting.api_key}
                     onChange={(e) => setNewSetting({ ...newSetting, api_key: e.target.value })}
                   />
                 </Grid>
+                {newSetting.service === 'proxmox' && (
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label={PROXMOX_FIELD_LABELS.api_secret}
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      helperText="The UUID secret generated when creating the API token in Proxmox"
+                      type="password"
+                      value={newSetting.api_secret}
+                      onChange={(e) => setNewSetting({ ...newSetting, api_secret: e.target.value })}
+                    />
+                  </Grid>
+                )}
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label={newSetting.service === 'smtp' ? SMTP_FIELD_LABELS.username : 'Username'}
+                    label={newSetting.service === 'smtp' ? SMTP_FIELD_LABELS.username : newSetting.service === 'proxmox' ? PROXMOX_FIELD_LABELS.username : 'Username'}
+                    helperText={newSetting.service === 'proxmox' ? 'Legacy auth - use API Token instead' : ''}
                     value={newSetting.username}
                     onChange={(e) => setNewSetting({ ...newSetting, username: e.target.value })}
                   />
@@ -294,9 +317,10 @@ function Settings({ onClose }) {
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label={newSetting.service === 'smtp' ? SMTP_FIELD_LABELS.password : 'Password'}
+                    label={newSetting.service === 'smtp' ? SMTP_FIELD_LABELS.password : newSetting.service === 'proxmox' ? PROXMOX_FIELD_LABELS.password : 'Password'}
                     type="password"
                     placeholder={editingService ? 'Leave blank to keep existing' : ''}
+                    helperText={newSetting.service === 'proxmox' ? 'Legacy auth - use API Token instead' : ''}
                     value={newSetting.password}
                     onChange={(e) => setNewSetting({ ...newSetting, password: e.target.value })}
                   />

@@ -9,7 +9,7 @@ function SuperOpsDoc({ data }) {
   return (
     <Card className="superops-doc-card">
       <CardContent>
-        <Typography variant="h6" component="h2" gutterBottom>
+        <Typography variant="h6" component="h2" sx={{ fontSize: '36pt', fontWeight: 'bold' }}>
           Documentation / Passwords
         </Typography>
         {docUrl ? (

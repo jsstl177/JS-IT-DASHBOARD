@@ -48,6 +48,7 @@ function App() {
     moveModule,
     getUnassignedModules,
     addModuleToTab,
+    reorderTabs,
   } = useDashboardTabs();
 
   const getRefreshSeconds = () => {
@@ -232,6 +233,8 @@ function App() {
       <ProxmoxStatus
         data={proxmoxStatus.items || []}
         sourceUrl={proxmoxStatus.sourceUrl}
+        lastUpdated={proxmoxStatus.items?.[0]?.lastUpdated}
+        onRefresh={fetchDashboardData}
       />
     ),
     'powerbi': (
@@ -300,6 +303,7 @@ function App() {
                 onDeleteTab={deleteTab}
                 onMoveModule={moveModule}
                 onAddModuleToTab={addModuleToTab}
+                onReorderTabs={reorderTabs}
                 unassignedModules={getUnassignedModules()}
                 moduleDisplayNames={MODULE_DISPLAY_NAMES}
               />

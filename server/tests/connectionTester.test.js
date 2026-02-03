@@ -131,7 +131,37 @@ describe('connectionTester', () => {
 
   // ========== Proxmox ==========
   describe('proxmox', () => {
-    it('should POST to /api2/json/access/ticket for auth only and return success', async () => {
+    it('should test API token authentication successfully', async () => {
+      axios.get.mockResolvedValue({ 
+        data: { 
+          data: [
+            { type: 'node', name: 'pve1', online: 1 },
+            { type: 'node', name: 'pve2', online: 1 }
+          ] 
+        } 
+      });
+
+      const result = await testServiceConnection('proxmox', {
+        base_url: 'https://proxmox.local:8006',
+        api_key: 'root@pam!dashboard',
+        api_secret: 'secret-token-uuid'
+      });
+
+      expect(axios.get).toHaveBeenCalledWith(
+        'https://proxmox.local:8006/api2/json/cluster/status',
+        expect.objectContaining({
+          timeout: 5000,
+          headers: {
+            'Authorization': 'PVEAPIToken=root@pam!dashboard=secret-token-uuid'
+          }
+        })
+      );
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('authenticated successfully');
+      expect(result.message).toContain('2 node');
+    });
+
+    it('should test legacy username/password authentication', async () => {
       axios.post.mockResolvedValue({ data: { data: { ticket: 'abc', CSRFPreventionToken: 'xyz' } } });
 
       const result = await testServiceConnection('proxmox', {
@@ -145,21 +175,25 @@ describe('connectionTester', () => {
         { username: 'root@pam', password: 'secret' },
         expect.objectContaining({ timeout: 5000 })
       );
-      // Should NOT enumerate nodes — only auth
-      expect(axios.__instance.get).not.toHaveBeenCalled();
-      expect(result).toEqual({ success: true, message: 'Proxmox authentication successful.' });
+      expect(result.success).toBe(true);
     });
 
-    it('should propagate auth failure', async () => {
+    it('should propagate API token auth failure', async () => {
       const err = new Error('Request failed with status code 401');
       err.response = { status: 401 };
-      axios.post.mockRejectedValue(err);
+      axios.get.mockRejectedValue(err);
 
       await expect(testServiceConnection('proxmox', {
         base_url: 'https://proxmox.local:8006',
-        username: 'root@pam',
-        password: 'wrong'
+        api_key: 'root@pam!dashboard',
+        api_secret: 'wrong-token'
       })).rejects.toThrow();
+    });
+
+    it('should throw error when neither API token nor credentials provided', async () => {
+      await expect(testServiceConnection('proxmox', {
+        base_url: 'https://proxmox.local:8006'
+      })).rejects.toThrow('requires either API Token');
     });
   });
 

@@ -101,6 +101,14 @@ async function initializeDatabase() {
 
     console.log('Default admin user inserted successfully.');
 
+    // Insert default PowerBI configuration
+    await pool.execute(
+      `INSERT INTO settings (service, base_url) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE base_url = VALUES(base_url)`,
+      ['powerbi', 'https://app.powerbi.com/groups/me/reports/919d8b16-e1fd-4633-8bd8-3cdcd1f89102/b5de83ec9295fdc36774?experience=power-bi']
+    );
+    console.log('Default PowerBI configuration inserted successfully.');
+
     await initializeDefaultAssetColumns(1);
 
   } catch (err) {

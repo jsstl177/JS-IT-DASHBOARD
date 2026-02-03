@@ -21,7 +21,7 @@ function NetworkStatus({ data, sourceUrl, totalMonitors }) {
   return (
     <Card className="network-status-card" sx={{ height: '100%' }}>
       <CardContent>
-        <Typography variant="h6" component="h2" gutterBottom>
+        <Typography variant="h6" component="h2" sx={{ fontSize: '36pt', fontWeight: 'bold' }}>
           Network Status
           {sourceUrl && (
             <a

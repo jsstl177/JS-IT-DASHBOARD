@@ -265,6 +265,20 @@ export function useDashboardTabs() {
     return ALL_MODULE_KEYS.filter((key) => !assigned.has(key));
   }, [state.tabs]);
 
+  const reorderTabs = useCallback((oldIndex, newIndex) => {
+    update((prev) => {
+      if (oldIndex < 0 || oldIndex >= prev.tabs.length) return prev;
+      if (newIndex < 0 || newIndex >= prev.tabs.length) return prev;
+      if (oldIndex === newIndex) return prev;
+
+      const newTabs = [...prev.tabs];
+      const [movedTab] = newTabs.splice(oldIndex, 1);
+      newTabs.splice(newIndex, 0, movedTab);
+
+      return { ...prev, tabs: newTabs };
+    });
+  }, [update]);
+
   return {
     tabs: state.tabs,
     activeTabId: state.activeTabId,
@@ -277,5 +291,6 @@ export function useDashboardTabs() {
     moveModule,
     getUnassignedModules,
     addModuleToTab,
+    reorderTabs,
   };
 }

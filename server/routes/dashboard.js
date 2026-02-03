@@ -83,10 +83,10 @@ router.get('/data', asyncHandler(async (req, res) => {
           }
           break;
         case 'proxmox':
-          if (setting.base_url && setting.username && setting.password) {
-            const nodeNames = setting.api_key ? setting.api_key.split(',').map(s => s.trim()) : [];
+          if (setting.base_url && setting.api_key && setting.api_secret) {
+            // API Token authentication: api_key = token ID (e.g., root@pam!dashboard), api_secret = UUID
             results.proxmoxStatus = await Promise.race([
-              getProxmoxStatus(setting.base_url, setting.username, setting.password, nodeNames),
+              getProxmoxStatus(setting.base_url, setting.api_key, setting.api_secret),
               timeoutPromise(15000, 'Proxmox timeout')
             ]);
           }

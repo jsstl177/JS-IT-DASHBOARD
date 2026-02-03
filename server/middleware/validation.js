@@ -45,8 +45,11 @@ const validateSettings = (req, res, next) => {
         if (!base_url || !isValidUrl(base_url)) {
           errors.push('Valid base URL is required for Proxmox');
         }
-        if (!req.body.username) {
-          errors.push('Username is required for Proxmox');
+        // Proxmox supports API Token auth (preferred) or legacy username/password auth
+        const hasApiToken = api_key && req.body.api_secret;
+        const hasLegacyAuth = req.body.username && req.body.password;
+        if (!hasApiToken && !hasLegacyAuth) {
+          errors.push('Proxmox requires either API Token (API Key + API Secret) or Username + Password');
         }
         break;
       case 'powerbi':

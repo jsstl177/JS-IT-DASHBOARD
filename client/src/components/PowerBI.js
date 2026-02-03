@@ -1,5 +1,6 @@
 import React from 'react';
-import { Card, CardContent, Typography } from '@mui/material';
+import { Card, CardContent, Typography, Button, Box } from '@mui/material';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 function PowerBI({ data }) {
   const sourceUrl = data?.sourceUrl || data?.embedUrl;
@@ -7,23 +8,26 @@ function PowerBI({ data }) {
   return (
     <Card className="powerbi-card">
       <CardContent>
-        <Typography variant="h6" component="h2" gutterBottom>
+        <Typography variant="h6" component="h2" sx={{ fontSize: '36pt', fontWeight: 'bold' }}>
           KPI Information
-          {sourceUrl && (
-            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', fontSize: '14px' }}>
-              Open
-            </a>
-          )}
         </Typography>
-        {data?.embedUrl ? (
-          <iframe
-            title="Power BI Report"
-            width="100%"
-            height="300"
-            src={data.embedUrl}
-            frameBorder="0"
-            allowFullScreen="true"
-          ></iframe>
+        {sourceUrl ? (
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              Power BI reports require authentication to view.
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              startIcon={<OpenInNewIcon />}
+              size="large"
+            >
+              Open Power BI Report
+            </Button>
+          </Box>
         ) : (
           <Typography variant="body2" color="textSecondary">
             Power BI report not configured

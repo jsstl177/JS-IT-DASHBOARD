@@ -123,7 +123,18 @@ describe('Validation Middleware', () => {
     });
 
     // proxmox
-    it('should pass for valid proxmox settings', () => {
+    it('should pass for valid proxmox settings with API token', () => {
+      const { req, res, next } = createMocks({
+        service: 'proxmox',
+        base_url: 'https://proxmox.local:8006',
+        api_key: 'root@pam!dashboard',
+        api_secret: 'secret-token-uuid'
+      });
+      validateSettings(req, res, next);
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('should pass for valid proxmox settings with legacy username/password', () => {
       const { req, res, next } = createMocks({
         service: 'proxmox',
         base_url: 'https://proxmox.local:8006',
@@ -134,17 +145,21 @@ describe('Validation Middleware', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    it('should reject proxmox without username', () => {
+    it('should reject proxmox without API token or username/password', () => {
       const { req, res, next } = createMocks({ service: 'proxmox', base_url: 'https://proxmox.local:8006' });
       validateSettings(req, res, next);
       expect(res.statusCode).toBe(400);
       expect(res.jsonData.details).toEqual(expect.arrayContaining([
-        expect.stringContaining('Username is required')
+        expect.stringContaining('Proxmox requires either API Token')
       ]));
     });
 
     it('should reject proxmox without base_url', () => {
-      const { req, res, next } = createMocks({ service: 'proxmox', username: 'root@pam', password: 'secret' });
+      const { req, res, next } = createMocks({ 
+        service: 'proxmox', 
+        api_key: 'root@pam!dashboard',
+        api_secret: 'secret'
+      });
       validateSettings(req, res, next);
       expect(res.statusCode).toBe(400);
     });

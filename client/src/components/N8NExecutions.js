@@ -20,7 +20,7 @@ function N8NExecutions({ data, sourceUrl }) {
   return (
     <Card className="n8n-executions-card">
       <CardContent>
-        <Typography variant="h6" component="h2" gutterBottom>
+        <Typography variant="h6" component="h2" sx={{ fontSize: '36pt', fontWeight: 'bold' }}>
           N8N Workflow History
           {sourceUrl && (
             <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', fontSize: '14px' }}>

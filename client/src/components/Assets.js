@@ -64,7 +64,7 @@ function Assets({ data, sourceUrl, totalCount }) {
   const [userId, setUserId] = useState(1);
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('settingsToken');
+    const token = localStorage.getItem('authToken');
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
@@ -189,7 +189,7 @@ function Assets({ data, sourceUrl, totalCount }) {
     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', p: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-          <Typography variant="h6" component="h2" sx={{ fontSize: '1.1rem' }}>
+          <Typography variant="h6" component="h2" sx={{ fontSize: '36pt', fontWeight: 'bold' }}>
             Assets
             {sourceUrl && (
               <a

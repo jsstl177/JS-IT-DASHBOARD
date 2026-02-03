@@ -148,19 +148,26 @@ describe('Dashboard Routes', () => {
       expect(getWorkflowExecutions).toHaveBeenCalledWith('https://n8n.local', 'n8nkey');
     });
 
-    it('should call proxmox with correct parameters including node names', async () => {
+    it('should call proxmox with API token authentication', async () => {
+      const { encrypt } = require('../utils/crypto');
+      const encryptedSecret = encrypt('my-secret-token');
+      
       dbAll.mockResolvedValue([
         {
           service: 'proxmox',
           base_url: 'https://proxmox.local:8006',
-          api_key: 'node1,node2',
-          api_secret: null,
-          username: 'root@pam',
-          password: 'secret'
+          api_key: encrypt('root@pam!dashboard'),
+          api_secret: encryptedSecret,
+          username: null,
+          password: null
         }
       ]);
 
-      getProxmoxStatus.mockResolvedValue({ sourceUrl: 'https://proxmox.local:8006', items: [] });
+      getProxmoxStatus.mockResolvedValue({ 
+        sourceUrl: 'https://proxmox.local:8006', 
+        items: [],
+        clusterInfo: { totalNodes: 0, onlineNodes: 0, totalVMs: 0, totalContainers: 0 }
+      });
 
       await request(app)
         .get('/api/dashboard/data')
@@ -168,9 +175,8 @@ describe('Dashboard Routes', () => {
 
       expect(getProxmoxStatus).toHaveBeenCalledWith(
         'https://proxmox.local:8006',
-        'root@pam',
-        'secret',
-        ['node1', 'node2']
+        'root@pam!dashboard',
+        'my-secret-token'
       );
     });
 
@@ -229,7 +235,9 @@ describe('Dashboard Routes', () => {
         // superops without api_key should be skipped
         { service: 'superops', base_url: 'https://superops.com', api_key: null, api_secret: null, password: null },
         // n8n without base_url should be skipped
-        { service: 'n8n', base_url: null, api_key: 'key', api_secret: null, password: null }
+        { service: 'n8n', base_url: null, api_key: 'key', api_secret: null, password: null },
+        // proxmox without api_key or api_secret should be skipped
+        { service: 'proxmox', base_url: 'https://proxmox.local:8006', api_key: null, api_secret: null, password: null }
       ]);
 
       await request(app)
@@ -238,6 +246,7 @@ describe('Dashboard Routes', () => {
 
       expect(getOpenTickets).not.toHaveBeenCalled();
       expect(getWorkflowExecutions).not.toHaveBeenCalled();
+      expect(getProxmoxStatus).not.toHaveBeenCalled();
     });
   });
 });

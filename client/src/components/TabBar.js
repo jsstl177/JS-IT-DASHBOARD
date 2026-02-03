@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   Tabs,
   Tab,
@@ -39,6 +39,7 @@ export default function TabBar({
   onDeleteTab,
   onMoveModule,
   onAddModuleToTab,
+  onReorderTabs,
   unassignedModules,
   moduleDisplayNames,
 }) {
@@ -51,6 +52,56 @@ export default function TabBar({
   const [renameValue, setRenameValue] = useState('');
 
   const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0];
+
+  // --- Drag and Drop ---
+  const [dragIdx, setDragIdx] = useState(null);
+  const [overIdx, setOverIdx] = useState(null);
+  const dragCounter = useRef(0);
+
+  const handleDragStart = useCallback((e, idx) => {
+    setDragIdx(idx);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(idx));
+  }, []);
+
+  const handleDragOver = useCallback((e, idx) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setOverIdx(idx);
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    dragCounter.current -= 1;
+    if (dragCounter.current === 0) {
+      setOverIdx(null);
+    }
+  }, []);
+
+  const handleDragEnter = useCallback((e) => {
+    e.preventDefault();
+    dragCounter.current += 1;
+  }, []);
+
+  const handleDrop = useCallback((e, dropIdx) => {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setOverIdx(null);
+
+    if (dragIdx == null || dragIdx === dropIdx) {
+      setDragIdx(null);
+      return;
+    }
+
+    onReorderTabs(dragIdx, dropIdx);
+    setDragIdx(null);
+  }, [dragIdx, onReorderTabs]);
+
+  const handleDragEnd = useCallback(() => {
+    setDragIdx(null);
+    setOverIdx(null);
+    dragCounter.current = 0;
+  }, []);
 
   // --- Menu ---
   const handleMenuOpen = (e) => {
@@ -135,12 +186,28 @@ export default function TabBar({
             },
           }}
         >
-          {tabs.map((tab) => (
+          {tabs.map((tab, idx) => (
             <Tab
               key={tab.id}
               value={tab.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, idx)}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, idx)}
+              onDragEnd={handleDragEnd}
+              sx={{
+                opacity: dragIdx === idx ? 0.5 : 1,
+                transform: overIdx === idx && dragIdx !== idx ? 'scale(1.02)' : 'none',
+                transition: 'all 0.2s ease',
+                cursor: 'move',
+                ...(overIdx === idx && dragIdx !== idx && {
+                  backgroundColor: 'action.hover',
+                }),
+              }}
               label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pointerEvents: 'none' }}>
                   {tab.name}
                   <Chip
                     label={tab.modules.length}

@@ -20,7 +20,7 @@ function AutomationLogs({ data, status, sourceUrl }) {
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', p: 1.5, '&:last-child': { pb: 1.5 } }}>
         {/* Header row */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-          <Typography variant="h6" component="h2" sx={{ fontSize: '1.1rem' }}>
+          <Typography variant="h6" component="h2" sx={{ fontSize: '36pt', fontWeight: 'bold' }}>
             Automation Log
             {sourceUrl && (
               <a

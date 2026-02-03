@@ -118,7 +118,7 @@ function MonthlyUptime({ data, sourceUrl }) {
   return (
     <Card sx={{ height: '100%' }}>
       <CardContent>
-        <Typography variant="h6" component="h2" gutterBottom>
+        <Typography variant="h6" component="h2" sx={{ fontSize: '36pt', fontWeight: 'bold' }}>
           Last 30-Days Uptime
           {sourceUrl && (
             <a
