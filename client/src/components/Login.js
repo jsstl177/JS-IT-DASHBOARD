@@ -35,8 +35,19 @@ function Login({ onLogin }) {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <Card style={{ minWidth: '300px' }}>
-        <CardContent>
+      <Card style={{ minWidth: '300px', maxWidth: '400px' }}>
+        <CardContent style={{ textAlign: 'center', paddingTop: '32px' }}>
+          <div style={{ marginBottom: '24px' }}>
+            <img
+              src="/logo.png"
+              alt="Johnstone Supply"
+              style={{
+                width: '120px',
+                height: 'auto',
+                marginBottom: '16px'
+              }}
+            />
+          </div>
           <Typography variant="h5" component="h2" gutterBottom>
             Dashboard Login
           </Typography>
