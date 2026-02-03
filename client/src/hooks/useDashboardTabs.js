@@ -5,7 +5,7 @@ const OLD_LAYOUT_KEY = 'dashboardLayout';
 
 export const ALL_MODULE_KEYS = [
   'network', 'monthly-uptime', 'tickets', 'alerts', 'assets',
-  'employee-setup', 'logs', 'n8n', 'proxmox', 'powerbi', 'superops-doc'
+  'employee-setup', 'logs', 'n8n', 'proxmox', 'powerbi', 'superops-doc', 'custom-links'
 ];
 
 export const MODULE_DISPLAY_NAMES = {
@@ -20,7 +20,51 @@ export const MODULE_DISPLAY_NAMES = {
   'proxmox': 'Proxmox Status',
   'powerbi': 'KPI / Power BI',
   'superops-doc': 'SuperOps Documentation',
+  'custom-links': 'Custom Links'
 };
+
+// Storage key for custom module names
+const CUSTOM_MODULE_NAMES_KEY = 'customModuleNames';
+
+// Get custom module names from localStorage
+function getCustomModuleNames() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_MODULE_NAMES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return parsed;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+// Save custom module names to localStorage
+function saveCustomModuleNames(names) {
+  localStorage.setItem(CUSTOM_MODULE_NAMES_KEY, JSON.stringify(names));
+}
+
+// Get display name for a module (custom if available, otherwise default)
+function getModuleDisplayName(moduleKey) {
+  const customNames = getCustomModuleNames();
+  if (customNames && customNames[moduleKey]) {
+    return customNames[moduleKey];
+  }
+  return MODULE_DISPLAY_NAMES[moduleKey] || moduleKey;
+}
+
+// Update a custom module name
+function updateCustomModuleName(moduleKey, newName) {
+  const customNames = getCustomModuleNames() || {};
+  customNames[moduleKey] = newName.trim() || MODULE_DISPLAY_NAMES[moduleKey] || moduleKey;
+  saveCustomModuleNames(customNames);
+}
+
+// Reset custom module names to defaults
+function resetCustomModuleNames() {
+  localStorage.removeItem(CUSTOM_MODULE_NAMES_KEY);
+}
 
 const DEFAULT_LAYOUT = [
   { i: 'network', x: 0, y: 0, w: 6, h: 4 },
@@ -279,6 +323,15 @@ export function useDashboardTabs() {
     });
   }, [update]);
 
+  // Module name management
+  const updateModuleDisplayName = useCallback((moduleKey, newName) => {
+    updateCustomModuleName(moduleKey, newName);
+  }, []);
+
+  const resetModuleDisplayNames = useCallback(() => {
+    resetCustomModuleNames();
+  }, []);
+
   return {
     tabs: state.tabs,
     activeTabId: state.activeTabId,
@@ -292,5 +345,10 @@ export function useDashboardTabs() {
     getUnassignedModules,
     addModuleToTab,
     reorderTabs,
+    updateModuleDisplayName,
+    resetModuleDisplayNames,
   };
 }
+
+// Export helper functions for direct use
+export { getModuleDisplayName, updateCustomModuleName, resetCustomModuleNames };

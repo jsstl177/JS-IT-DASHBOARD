@@ -30,8 +30,25 @@ router.get('/data', asyncHandler(async (req, res) => {
     assets: { sourceUrl: null, items: [], totalCount: 0 },
     powerbiInfo: null,
     superOpsDoc: { sourceUrl: null, docUrl: null },
-    employeeSetup: []
+     employeeSetup: []
   };
+
+  // Fetch custom links for the current user
+  try {
+    const userId = req.user?.id;
+    if (userId) {
+      const customLinks = await dbAll(
+        'SELECT id, label, url, sort_order FROM custom_links WHERE user_id = ? ORDER BY sort_order, created_at',
+        [userId]
+      );
+      results.customLinks = customLinks;
+    } else {
+      results.customLinks = [];
+    }
+  } catch (err) {
+    logger.warn('Error fetching custom links:', err.message);
+    results.customLinks = [];
+  }
 
   // Fetch data from each service with timeout and error handling
   const promises = settings.map(async (setting) => {
@@ -209,6 +226,99 @@ router.post('/resolve-alert', asyncHandler(async (req, res) => {
 
   logger.info(`Alert resolved: ${alertId}`);
   res.json({ success: true, alert: resolvedAlert });
+}));
+
+// Custom Links CRUD endpoints
+router.get('/custom-links', asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const links = await dbAll(
+    'SELECT id, label, url, sort_order FROM custom_links WHERE user_id = ? ORDER BY sort_order, created_at',
+    [userId]
+  );
+  res.json(links);
+}));
+
+router.post('/custom-links', asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const { label, url } = req.body;
+  if (!label || !url) {
+    return res.status(400).json({ error: 'Label and URL are required' });
+  }
+
+  // Get next sort order
+  const maxOrder = await dbGet(
+    'SELECT MAX(sort_order) as maxOrder FROM custom_links WHERE user_id = ?',
+    [userId]
+  );
+  const sortOrder = (maxOrder?.maxOrder || 0) + 1;
+
+  const result = await dbRun(
+    'INSERT INTO custom_links (user_id, label, url, sort_order) VALUES (?, ?, ?, ?)',
+    [userId, label, url, sortOrder]
+  );
+
+  logger.info(`Custom link created for user ${userId}: ${label}`);
+  res.json({ success: true, id: result.lastID });
+}));
+
+router.put('/custom-links/:id', asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const linkId = req.params.id;
+  const { label, url, sort_order } = req.body;
+
+  if (!label || !url) {
+    return res.status(400).json({ error: 'Label and URL are required' });
+  }
+
+  const existing = await dbGet(
+    'SELECT id FROM custom_links WHERE id = ? AND user_id = ?',
+    [linkId, userId]
+  );
+
+  if (!existing) {
+    return res.status(404).json({ error: 'Link not found' });
+  }
+
+  await dbRun(
+    'UPDATE custom_links SET label = ?, url = ?, sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
+    [label, url, sort_order || 0, linkId, userId]
+  );
+
+  logger.info(`Custom link updated for user ${userId}: ${label}`);
+  res.json({ success: true });
+}));
+
+router.delete('/custom-links/:id', asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const linkId = req.params.id;
+
+  const result = await dbRun(
+    'DELETE FROM custom_links WHERE id = ? AND user_id = ?',
+    [linkId, userId]
+  );
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'Link not found' });
+  }
+
+  logger.info(`Custom link deleted for user ${userId}: ${linkId}`);
+  res.json({ success: true });
 }));
 
 module.exports = router;

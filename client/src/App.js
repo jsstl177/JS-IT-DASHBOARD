@@ -19,6 +19,7 @@ import Login from './components/Login';
 import ThemeSelector from './components/ThemeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
 import TabBar from './components/TabBar';
+import CustomLinks from './components/CustomLinks';
 import { useDashboardTabs, MODULE_DISPLAY_NAMES } from './hooks/useDashboardTabs';
 import { themes } from './themes';
 import 'react-grid-layout/css/styles.css';
@@ -50,6 +51,8 @@ function App() {
     getUnassignedModules,
     addModuleToTab,
     reorderTabs,
+    updateModuleDisplayName,
+    resetModuleDisplayNames,
   } = useDashboardTabs();
 
   const getRefreshSeconds = () => {
@@ -199,6 +202,7 @@ function App() {
   const alerts = dashboardData.alerts || {};
   const assets = dashboardData.assets || {};
   const superOpsDoc = dashboardData.superOpsDoc || {};
+  const customLinks = dashboardData.customLinks || [];
 
   const [resolvingAlerts, setResolvingAlerts] = useState(new Set());
 
@@ -284,10 +288,13 @@ function App() {
     'powerbi': (
       <PowerBI data={dashboardData.powerbiInfo} />
     ),
-    'superops-doc': (
-      <SuperOpsDoc data={superOpsDoc} />
-    ),
-  };
+     'superops-doc': (
+       <SuperOpsDoc data={superOpsDoc} />
+     ),
+     'custom-links': (
+       <CustomLinks data={customLinks} />
+     ),
+   };
 
   // If not logged in, show login screen only
   if (!isLoggedIn) {
@@ -356,6 +363,8 @@ function App() {
                 onReorderTabs={reorderTabs}
                 unassignedModules={getUnassignedModules()}
                 moduleDisplayNames={MODULE_DISPLAY_NAMES}
+                updateModuleDisplayName={updateModuleDisplayName}
+                resetModuleDisplayNames={resetModuleDisplayNames}
               />
               <ErrorBoundary>
                 {activeTab.modules.length > 0 ? (

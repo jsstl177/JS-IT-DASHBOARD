@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import {
   Card, CardContent, Typography, TextField, Button, Grid,
   Alert, List, ListItem, ListItemText, IconButton, Dialog,
-  DialogTitle, DialogContent, DialogActions, CircularProgress, Chip
+  DialogTitle, DialogContent, DialogActions, CircularProgress, Chip, Box
 } from '@mui/material';
-import { Delete as DeleteIcon, Add as AddIcon, Edit as EditIcon, PlayArrow as PlayArrowIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon, Add as AddIcon, Edit as EditIcon, PlayArrow as PlayArrowIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import MenuItem from '@mui/material/MenuItem';
 import axios from 'axios';
 import UserManagement from './UserManagement';
+import { Responsive, WidthProvider } from 'react-grid-layout';
+import { useSettingsLayout } from '../hooks/useSettingsLayout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 
 const SERVICE_URL_HINTS = {
   'uptime-kuma': 'https://uptime-kuma.example.com',

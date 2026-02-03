@@ -22,6 +22,10 @@ import {
   Select,
   FormControl,
   InputLabel,
+  IconButton as IconButtonMUI,
+  Tooltip,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -29,6 +33,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import AddBoxIcon from '@mui/icons-material/AddBox';
+import SettingsIcon from '@mui/icons-material/Settings';
+import { getModuleDisplayName } from '../hooks/useDashboardTabs';
 
 export default function TabBar({
   tabs,
@@ -42,14 +48,20 @@ export default function TabBar({
   onReorderTabs,
   unassignedModules,
   moduleDisplayNames,
+  updateModuleDisplayName,
+  resetModuleDisplayNames,
 }) {
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [newTabName, setNewTabName] = useState('');
   const [renameValue, setRenameValue] = useState('');
+  const [editingModule, setEditingModule] = useState(null);
+  const [editedModuleName, setEditedModuleName] = useState('');
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0];
 
@@ -149,6 +161,28 @@ export default function TabBar({
   const handleManageOpen = () => {
     setManageDialogOpen(true);
     handleMenuClose();
+  };
+
+  // --- Settings / Edit Module Names ---
+  const handleEditModuleName = (moduleKey) => {
+    setEditingModule(moduleKey);
+    setEditedModuleName(getModuleDisplayName(moduleKey));
+    setSettingsDialogOpen(true);
+  };
+
+  const handleSaveModuleName = () => {
+    if (editedModuleName.trim()) {
+      updateModuleDisplayName(editingModule, editedModuleName.trim());
+      setSnackbar({ open: true, message: 'Module name updated', severity: 'success' });
+    }
+    setSettingsDialogOpen(false);
+    setEditingModule(null);
+  };
+
+  const handleResetModuleNames = () => {
+    resetModuleDisplayNames();
+    setSnackbar({ open: true, message: 'Module names reset to defaults', severity: 'success' });
+    setSettingsDialogOpen(false);
   };
 
   const otherTabs = tabs.filter((t) => t.id !== activeTabId);
@@ -337,8 +371,15 @@ export default function TabBar({
                   }}
                 >
                   <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }}>
-                    {moduleDisplayNames[mod] || mod}
+                    {getModuleDisplayName(mod)}
                   </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleEditModuleName(mod)}
+                    title="Edit name"
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
                   {otherTabs.length > 0 && (
                     <FormControl size="small" sx={{ minWidth: 150 }}>
                       <InputLabel>Move to...</InputLabel>
@@ -389,7 +430,7 @@ export default function TabBar({
                     }}
                   >
                     <Typography variant="body2">
-                      {moduleDisplayNames[mod] || mod}
+                      {getModuleDisplayName(mod)}
                     </Typography>
                     <Button
                       size="small"
@@ -411,6 +452,54 @@ export default function TabBar({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* --- Edit Module Name Dialog --- */}
+      <Dialog open={settingsDialogOpen} onClose={() => setSettingsDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Module Name</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {editingModule ? `Editing: ${editingModule}` : 'Edit module name'}
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Module Name"
+            value={editedModuleName}
+            onChange={(e) => setEditedModuleName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSaveModuleName()}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSettingsDialogOpen(false)} disabled={!!editingModule}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleResetModuleNames}
+            disabled={!!editingModule}
+            color="error"
+          >
+            Reset All
+          </Button>
+          <Button
+            onClick={handleSaveModuleName}
+            variant="contained"
+            disabled={!editedModuleName.trim()}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* --- Snackbar --- */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
+      </Snackbar>
     </>
   );
 }

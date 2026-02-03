@@ -64,18 +64,30 @@ async function initializeDatabase() {
         FOREIGN KEY (checklist_id) REFERENCES employee_setup_checklist (id) ON DELETE CASCADE
       )`,
 
-      `CREATE TABLE IF NOT EXISTS asset_column_config (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT,
-        column_key VARCHAR(255) NOT NULL,
-        column_label VARCHAR(255) NOT NULL,
-        visible BOOLEAN DEFAULT TRUE,
-        sort_order INT DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_user_column (user_id, column_key),
-        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-      )`
+       `CREATE TABLE IF NOT EXISTS asset_column_config (
+         id INT AUTO_INCREMENT PRIMARY KEY,
+         user_id INT,
+         column_key VARCHAR(255) NOT NULL,
+         column_label VARCHAR(255) NOT NULL,
+         visible BOOLEAN DEFAULT TRUE,
+         sort_order INT DEFAULT 0,
+         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+         UNIQUE KEY unique_user_column (user_id, column_key),
+         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+       )`,
+
+       `CREATE TABLE IF NOT EXISTS custom_links (
+         id INT AUTO_INCREMENT PRIMARY KEY,
+         user_id INT NOT NULL,
+         label VARCHAR(255) NOT NULL,
+         url TEXT NOT NULL,
+         sort_order INT DEFAULT 0,
+         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+         INDEX idx_user_sort (user_id, sort_order)
+       )`
     ];
 
     for (const query of tableQueries) {
