@@ -21,6 +21,29 @@ function EmployeeSetup({ data }) {
     }
   }, []);
 
+  const getStartDateColor = (startDate) => {
+    if (!startDate) return null;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    
+    const diffTime = start - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 14) return '#4caf50'; // Green - more than 2 weeks
+    if (diffDays >= 7) return '#ff9800'; // Yellow/Orange - 1-2 weeks
+    return '#f44336'; // Red - less than 1 week
+  };
+
+  const formatStartDate = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   useEffect(() => {
     fetchChecklists();
     const interval = setInterval(fetchChecklists, 30000);
@@ -99,7 +122,7 @@ function EmployeeSetup({ data }) {
   return (
     <Card className="employee-setup-card" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} sx={{ flexShrink: 0 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} sx={{ flexShrink: 0 }}>
           <Typography variant="h6" component="h2" sx={{ fontSize: '24pt', fontWeight: 'bold' }}>
             New Employee Setup
           </Typography>
@@ -114,6 +137,61 @@ function EmployeeSetup({ data }) {
           >
             New Employee
           </Button>
+        </Box>
+
+        {/* Legend */}
+        <Box 
+          display="flex" 
+          gap={2} 
+          mb={2} 
+          sx={{ 
+            flexShrink: 0,
+            flexWrap: 'wrap',
+            alignItems: 'center'
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 'bold', mr: 1 }}>
+            Start Date Legend:
+          </Typography>
+          <Box display="flex" alignItems="center" gap={0.5}>
+            <Box 
+              sx={{ 
+                width: 16, 
+                height: 16, 
+                backgroundColor: '#4caf50',
+                borderRadius: '4px'
+              }} 
+            />
+            <Typography variant="body2">
+              &gt; 2 weeks
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" gap={0.5}>
+            <Box 
+              sx={{ 
+                width: 16, 
+                height: 16, 
+                backgroundColor: '#ff9800',
+                borderRadius: '4px'
+              }} 
+            />
+            <Typography variant="body2">
+              1-2 weeks
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" gap={0.5}>
+            <Box 
+              sx={{ 
+                width: 16, 
+                height: 16, 
+                backgroundColor: '#f44336',
+                borderRadius: '4px'
+              }} 
+            />
+            <Typography variant="body2">
+              &lt; 1 week
+            </Typography>
+          </Box>
         </Box>
 
         {checklists.length === 0 ? (
@@ -145,6 +223,23 @@ function EmployeeSetup({ data }) {
                         size="small"
                       />
                     </Box>
+
+                    {checklist.start_date && (
+                      <Box 
+                        sx={{ 
+                          display: 'inline-block',
+                          backgroundColor: getStartDateColor(checklist.start_date),
+                          color: '#fff',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.875rem',
+                          fontWeight: 'bold',
+                          mb: 1
+                        }}
+                      >
+                        Start Date: {formatStartDate(checklist.start_date)}
+                      </Box>
+                    )}
 
                     <Typography variant="body2" color="textSecondary" gutterBottom>
                       {checklist.employee_email} • Store {checklist.store_number}

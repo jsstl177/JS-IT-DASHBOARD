@@ -46,6 +46,7 @@ async function initializeDatabase() {
         store_number VARCHAR(255),
         ticket_id VARCHAR(255),
         department VARCHAR(255),
+        start_date DATE,
         status VARCHAR(255) DEFAULT 'pending',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -103,6 +104,17 @@ async function initializeDatabase() {
     } catch (err) {
       // Column might already exist, continue
       console.log('Note: users.updated_at column migration attempted');
+    }
+
+    // Migration: Add start_date column to employee_setup_checklist table if it doesn't exist
+    try {
+      await pool.execute(`
+        ALTER TABLE employee_setup_checklist 
+        ADD COLUMN IF NOT EXISTS start_date DATE
+      `);
+    } catch (err) {
+      // Column might already exist, continue
+      console.log('Note: employee_setup_checklist.start_date column migration attempted');
     }
 
     console.log('Database tables initialized successfully.');

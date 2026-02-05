@@ -89,14 +89,14 @@ router.get('/', asyncHandler(async (req, res) => {
 
 // Create new employee setup checklist
 router.post('/', validateEmployeeSetup, asyncHandler(async (req, res) => {
-  const { employee_name, employee_email, store_number, ticket_id, department } = req.body;
+  const { employee_name, employee_email, store_number, ticket_id, department, start_date } = req.body;
 
   logger.info(`Creating checklist for employee: ${employee_name}`);
 
   const result = await dbRun(`
-    INSERT INTO employee_setup_checklist (employee_name, employee_email, store_number, ticket_id, department)
-    VALUES (?, ?, ?, ?, ?)
-  `, [employee_name, employee_email || null, store_number || null, ticket_id || null, department || null]);
+    INSERT INTO employee_setup_checklist (employee_name, employee_email, store_number, ticket_id, department, start_date)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `, [employee_name, employee_email || null, store_number || null, ticket_id || null, department || null, start_date || null]);
 
   const checklistId = result.lastID;
 
@@ -161,6 +161,25 @@ router.patch('/:checklistId/items/:itemId', asyncHandler(async (req, res) => {
       SET status = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `, [CHECKLIST_STATUS.COMPLETED, checklistId]);
+
+    // Close associated SuperOps ticket if it exists
+    if (checklist.ticket_id) {
+      try {
+        const superOpsSettings = await dbGet(
+          'SELECT api_key, base_url FROM settings WHERE service = ?',
+          ['superops']
+        );
+
+        if (superOpsSettings && superOpsSettings.api_key) {
+          const { closeTicket } = require('../services/superOps');
+          await closeTicket(superOpsSettings.base_url, superOpsSettings.api_key, checklist.ticket_id);
+          logger.info(`Closed SuperOps ticket ${checklist.ticket_id} for completed checklist ${checklistId}`);
+        }
+      } catch (error) {
+        logger.error(`Failed to close SuperOps ticket ${checklist.ticket_id}:`, error.message);
+        // Don't fail the request if ticket closure fails
+      }
+    }
   } else if (completedItems > 0 && checklist.status === CHECKLIST_STATUS.PENDING) {
     await dbRun(`
       UPDATE employee_setup_checklist

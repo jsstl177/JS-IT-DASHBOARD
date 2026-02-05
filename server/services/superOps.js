@@ -247,6 +247,15 @@ mutation resolveAlerts($input: [ResolveAlertInput]) {
   resolveAlerts(input: $input)
 }`;
 
+const CLOSE_TICKET_MUTATION = `
+mutation closeTicket($input: UpdateTicketInput!) {
+  updateTicket(input: $input) {
+    ticketId
+    displayId
+    status
+  }
+}`;
+
 async function getAlerts(tenantUrl, apiKey) {
   const subdomain = extractSubdomain(tenantUrl);
 
@@ -513,4 +522,67 @@ async function getAssets(tenantUrl, apiKey) {
   }
 }
 
-module.exports = { getOpenTickets, createTicket, extractSubdomain, getAlerts, getAssets, resolveAlert };
+async function closeTicket(tenantUrl, apiKey, ticketId) {
+  const subdomain = extractSubdomain(tenantUrl);
+
+  try {
+    logger.info('Attempting to close ticket in SuperOps', {
+      ticketId,
+      tenantUrl,
+      subdomain
+    });
+
+    const response = await axios.post(
+      SUPEROPS_API_URL,
+      {
+        query: CLOSE_TICKET_MUTATION,
+        variables: {
+          input: {
+            ticketId: ticketId,
+            status: 'Closed'
+          }
+        }
+      },
+      {
+        timeout: 10000,
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'CustomerSubDomain': subdomain,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    logger.info('SuperOps API response for closeTicket', {
+      ticketId,
+      hasErrors: !!response.data.errors,
+      hasData: !!response.data.data
+    });
+
+    if (response.data.errors) {
+      logger.error('SuperOps closeTicket errors', {
+        service: 'superops',
+        errors: response.data.errors
+      });
+      throw new Error(response.data.errors.map(e => e.message).join('; '));
+    }
+
+    const ticket = response.data.data?.updateTicket;
+    if (!ticket) {
+      throw new Error('SuperOps failed to close ticket');
+    }
+
+    logger.info(`Ticket closed successfully in SuperOps: ${ticketId} (Display ID: ${ticket.displayId})`);
+    return { ticketId: ticket.ticketId, displayId: ticket.displayId, status: ticket.status };
+  } catch (error) {
+    logger.error('SuperOps closeTicket error', {
+      service: 'superops',
+      error: error.message,
+      status: error.response?.status,
+      ticketId
+    });
+    throw error;
+  }
+}
+
+module.exports = { getOpenTickets, createTicket, extractSubdomain, getAlerts, getAssets, resolveAlert, closeTicket };
