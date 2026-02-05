@@ -1,12 +1,20 @@
+/**
+ * @fileoverview Uptime Kuma service for fetching monitor status and uptime data.
+ */
+
 const axios = require('axios');
 const logger = require('../utils/logger');
 const { MONITOR_STATUS } = require('../utils/constants');
 
-// Parse a user-supplied URL to extract the origin and status-page slug.
+/**
+ * Parse a user-supplied URL to extract the origin and status-page slug.
 // Handles URLs like:
 //   https://host                              → origin + slug "everything"
 //   https://host/status/myslug               → origin + slug "myslug"
 //   https://host/api/status-page/myslug      → origin + slug "myslug"
+ * @param {string} inputUrl - User-supplied Uptime Kuma URL
+ * @returns {{origin: string, slug: string}} Object with origin URL and slug
+ */
 function parseUptimeKumaUrl(inputUrl) {
   const url = inputUrl.replace(/\/+$/, '');
 
@@ -20,6 +28,11 @@ function parseUptimeKumaUrl(inputUrl) {
   return { origin: originMatch ? originMatch[1] : url, slug: 'everything' };
 }
 
+/**
+ * Fetches network status from Uptime Kuma, returning only down/alerting monitors.
+ * @param {string} baseUrl - Base URL of the Uptime Kuma status page
+ * @returns {Promise<Object>} Object containing sourceUrl, totalMonitors, and items (down monitors only)
+ */
 async function getNetworkStatus(baseUrl) {
   const { origin, slug } = parseUptimeKumaUrl(baseUrl);
 
@@ -85,6 +98,11 @@ async function getNetworkStatus(baseUrl) {
   }
 }
 
+/**
+ * Fetches 30-day uptime percentage for all monitors.
+ * @param {string} baseUrl - Base URL of the Uptime Kuma status page
+ * @returns {Promise<Object>} Object containing sourceUrl and items with uptime percentages
+ */
 async function getMonthlyUptime(baseUrl) {
   const { origin, slug } = parseUptimeKumaUrl(baseUrl);
 
@@ -124,6 +142,11 @@ async function getMonthlyUptime(baseUrl) {
   }
 }
 
+/**
+ * Fetches 7-day uptime percentage for all monitors.
+ * @param {string} baseUrl - Base URL of the Uptime Kuma status page
+ * @returns {Promise<Object>} Object containing sourceUrl and items with uptime percentages
+ */
 async function getWeeklyUptime(baseUrl) {
   const { origin, slug } = parseUptimeKumaUrl(baseUrl);
 

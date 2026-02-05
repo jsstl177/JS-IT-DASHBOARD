@@ -1,3 +1,7 @@
+/**
+ * @fileoverview SuperOps service for managing tickets, alerts, and assets via GraphQL API.
+ */
+
 const axios = require('axios');
 const logger = require('../utils/logger');
 
@@ -26,6 +30,12 @@ query getTicketList($input: ListInfoInput!) {
   }
 }`;
 
+/**
+ * Extracts the subdomain from a SuperOps tenant URL.
+ * @param {string} tenantUrl - Full SuperOps tenant URL
+ * @returns {string} Subdomain or hostname
+ * @example extractSubdomain('https://johnstonesupply-thewinesgroup.superops.ai') => 'johnstonesupply-thewinesgroup'
+ */
 function extractSubdomain(tenantUrl) {
   try {
     const url = new URL(tenantUrl);
@@ -40,6 +50,13 @@ function extractSubdomain(tenantUrl) {
   }
 }
 
+/**
+ * Fetches open tickets from SuperOps.
+ * @param {string} tenantUrl - SuperOps tenant URL
+ * @param {string} apiKey - SuperOps API key
+ * @returns {Promise<Object>} Object containing sourceUrl, items (open tickets), and totalCount
+ * @throws {Error} On API errors (re-thrown for proper error handling by caller)
+ */
 async function getOpenTickets(tenantUrl, apiKey) {
   const subdomain = extractSubdomain(tenantUrl);
 
@@ -139,6 +156,13 @@ mutation createTicket($input: CreateTicketInput!) {
   }
 }`;
 
+/**
+ * Fetches the first client from SuperOps (used for ticket creation).
+ * @param {string} tenantUrl - SuperOps tenant URL
+ * @param {string} apiKey - SuperOps API key
+ * @returns {Promise<{accountId: string, name: string}>} First client object
+ * @throws {Error} If no clients are found or API error occurs
+ */
 async function getFirstClient(tenantUrl, apiKey) {
   const subdomain = extractSubdomain(tenantUrl);
 
@@ -173,6 +197,16 @@ async function getFirstClient(tenantUrl, apiKey) {
   return { accountId: clients[0].accountId, name: clients[0].name };
 }
 
+/**
+ * Creates a new ticket in SuperOps.
+ * @param {string} tenantUrl - SuperOps tenant URL
+ * @param {string} apiKey - SuperOps API key
+ * @param {Object} ticketData - Ticket data
+ * @param {string} ticketData.subject - Ticket subject
+ * @param {string} ticketData.description - Ticket description
+ * @returns {Promise<Object>} Created ticket object with ticketId, displayId, subject, and link
+ * @throws {Error} On API errors
+ */
 async function createTicket(tenantUrl, apiKey, { subject, description }) {
   const subdomain = extractSubdomain(tenantUrl);
 
@@ -256,6 +290,12 @@ mutation closeTicket($input: UpdateTicketInput!) {
   }
 }`;
 
+/**
+ * Fetches active alerts from SuperOps.
+ * @param {string} tenantUrl - SuperOps tenant URL
+ * @param {string} apiKey - SuperOps API key
+ * @returns {Promise<Object>} Object containing sourceUrl, items (active alerts), and totalCount
+ */
 async function getAlerts(tenantUrl, apiKey) {
   const subdomain = extractSubdomain(tenantUrl);
 
@@ -326,6 +366,14 @@ async function getAlerts(tenantUrl, apiKey) {
   }
 }
 
+/**
+ * Resolves an alert in SuperOps.
+ * @param {string} tenantUrl - SuperOps tenant URL
+ * @param {string} apiKey - SuperOps API key
+ * @param {string} alertId - Alert ID to resolve
+ * @returns {Promise<Object>} Object with id and success status
+ * @throws {Error} On API errors
+ */
 async function resolveAlert(tenantUrl, apiKey, alertId) {
   const subdomain = extractSubdomain(tenantUrl);
 
@@ -412,6 +460,12 @@ query getAssetList($input: ListInfoInput!) {
   }
 }`;
 
+/**
+ * Fetches all assets from SuperOps with pagination support.
+ * @param {string} tenantUrl - SuperOps tenant URL
+ * @param {string} apiKey - SuperOps API key
+ * @returns {Promise<Object>} Object containing sourceUrl, items (all assets), and totalCount
+ */
 async function getAssets(tenantUrl, apiKey) {
   const subdomain = extractSubdomain(tenantUrl);
   const allAssets = [];
@@ -522,6 +576,14 @@ async function getAssets(tenantUrl, apiKey) {
   }
 }
 
+/**
+ * Closes a ticket in SuperOps.
+ * @param {string} tenantUrl - SuperOps tenant URL
+ * @param {string} apiKey - SuperOps API key
+ * @param {string} ticketId - Ticket ID to close
+ * @returns {Promise<Object>} Object with ticketId, displayId, and status
+ * @throws {Error} On API errors
+ */
 async function closeTicket(tenantUrl, apiKey, ticketId) {
   const subdomain = extractSubdomain(tenantUrl);
 

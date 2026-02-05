@@ -1,5 +1,15 @@
+/**
+ * @fileoverview Power BI service for parsing embed URLs.
+ */
+
 const logger = require('../utils/logger');
 
+/**
+ * Extracts Power BI report information from an embed URL.
+ * @param {string} embedUrl - Power BI embed URL
+ * @returns {Object|null} Object containing embedUrl, reportId, sourceUrl, and accessToken
+ * @returns {null} Returns null if parsing fails
+ */
 function getPowerBIEmbedInfo(embedUrl) {
   try {
     // Extract report ID from URL

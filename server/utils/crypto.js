@@ -1,9 +1,19 @@
+/**
+ * @fileoverview Cryptographic utilities for encrypting and decrypting sensitive data.
+ * Uses AES-256-GCM encryption with authentication tags for secure data storage.
+ */
+
 const crypto = require('crypto');
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 
+/**
+ * Retrieves and processes the encryption key from environment variables.
+ * @returns {Buffer} SHA-256 hash of the encryption key (32 bytes for AES-256)
+ * @throws {Error} If ENCRYPTION_KEY environment variable is not set
+ */
 function getEncryptionKey() {
   const key = process.env.ENCRYPTION_KEY;
   if (!key) {
@@ -13,6 +23,12 @@ function getEncryptionKey() {
   return crypto.createHash('sha256').update(key).digest();
 }
 
+/**
+ * Encrypts plaintext using AES-256-GCM encryption.
+ * @param {string} text - The plaintext to encrypt
+ * @returns {string} Encrypted text in format: iv:authTag:encryptedData (hex-encoded)
+ * @returns {string} Returns input unchanged if text is falsy
+ */
 function encrypt(text) {
   if (!text) return text;
 
@@ -29,6 +45,13 @@ function encrypt(text) {
   return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
 }
 
+/**
+ * Decrypts text that was encrypted using the encrypt function.
+ * @param {string} encryptedText - The encrypted text in format: iv:authTag:encryptedData
+ * @returns {string} Decrypted plaintext
+ * @returns {string} Returns input unchanged if text is falsy or not in expected format
+ * @note Provides backward compatibility by returning unencrypted text as-is if decryption fails
+ */
 function decrypt(encryptedText) {
   if (!encryptedText) return encryptedText;
 

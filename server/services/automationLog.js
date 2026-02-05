@@ -1,6 +1,15 @@
+/**
+ * @fileoverview Automation log service for fetching automation status and logs.
+ */
+
 const axios = require('axios');
 const logger = require('../utils/logger');
 
+/**
+ * Fetches automation logs and status from the automation log service.
+ * @param {string} baseUrl - Base URL of the automation log service
+ * @returns {Promise<Object>} Object containing sourceUrl, status, and log items
+ */
 async function getAutomationLogs(baseUrl) {
   try {
     const client = axios.create({ baseURL: baseUrl, timeout: 10000 });

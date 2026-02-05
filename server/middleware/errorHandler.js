@@ -1,6 +1,17 @@
+/**
+ * @fileoverview Error handling middleware for Express application.
+ */
+
 const logger = require('../utils/logger');
 
-// Error handling middleware
+/**
+ * Global error handling middleware.
+ * Logs errors and sends appropriate responses to clients.
+ * @param {Error} err - Error object
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 const errorHandler = (err, req, res, next) => {
   // Log the error
   logger.error('Error occurred:', {
@@ -44,12 +55,21 @@ const errorHandler = (err, req, res, next) => {
   res.status(statusCode).json(errorResponse);
 };
 
-// Async error wrapper
+/**
+ * Wraps async route handlers to catch errors and pass to error middleware.
+ * @param {Function} fn - Async route handler function
+ * @returns {Function} Express middleware function
+ */
 const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-// 404 handler
+/**
+ * Handles 404 Not Found errors for unmatched routes.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 const notFoundHandler = (req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
   error.statusCode = 404;

@@ -123,6 +123,38 @@ router.get('/data', asyncHandler(async (req, res) => {
     }
   });
 
+  // Fetch employee setup checklists
+  try {
+    // First, get all checklists from the database
+    const allChecklists = await dbAll(`
+      SELECT c.*,
+             COUNT(CASE WHEN i.status = 'completed' THEN 1 END) as completed_items,
+             COUNT(i.id) as total_items
+      FROM employee_setup_checklist c
+      LEFT JOIN checklist_items i ON c.id = i.checklist_id
+      GROUP BY c.id
+      ORDER BY c.created_at DESC
+    `);
+
+    // Attach items to each checklist
+    for (const checklist of allChecklists) {
+      checklist.items = await dbAll(
+        'SELECT * FROM checklist_items WHERE checklist_id = ? ORDER BY category, item_name',
+        [checklist.id]
+      );
+    }
+
+    // Show all employee setup checklists regardless of ticket status
+    // This ensures all employee cards are visible in the dashboard
+    let checklistsToShow = allChecklists;
+    logger.info(`Showing all ${allChecklists.length} employee setup checklists`);
+
+    results.employeeSetup = checklistsToShow;
+  } catch (error) {
+    logger.warn('Error fetching employee setup checklists:', error.message);
+    results.employeeSetup = [];
+  }
+
   await Promise.allSettled(promises);
 
   // Auto-create employee setup checklists from "New Employee:" tickets

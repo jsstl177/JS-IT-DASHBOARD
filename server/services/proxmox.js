@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Proxmox service for fetching virtualization cluster status and metrics.
+ */
+
 const axios = require('axios');
 const https = require('https');
 const logger = require('../utils/logger');

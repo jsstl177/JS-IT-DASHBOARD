@@ -1,6 +1,16 @@
+/**
+ * @fileoverview N8N service for fetching workflow execution history.
+ */
+
 const axios = require('axios');
 const logger = require('../utils/logger');
 
+/**
+ * Fetches recent workflow executions from N8N.
+ * @param {string} baseUrl - Base URL of the N8N instance
+ * @param {string} apiKey - N8N API key for authentication
+ * @returns {Promise<Object>} Object containing sourceUrl and execution items
+ */
 async function getWorkflowExecutions(baseUrl, apiKey) {
   try {
     const client = axios.create({

@@ -1,7 +1,16 @@
+/**
+ * @fileoverview Input validation middleware for request data.
+ */
+
 const validator = require('validator');
 const { ALLOWED_STATUSES } = require('../utils/constants');
 
-// Input validation middleware
+/**
+ * Validates settings configuration data for various services.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 const validateSettings = (req, res, next) => {
   const { service, api_key, base_url } = req.body;
 
@@ -83,6 +92,12 @@ const validateSettings = (req, res, next) => {
   next();
 };
 
+/**
+ * Validates login credentials.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 const validateLogin = (req, res, next) => {
   const { username, password } = req.body;
 
@@ -106,6 +121,12 @@ const validateLogin = (req, res, next) => {
   next();
 };
 
+/**
+ * Validates employee setup checklist creation data.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 const validateEmployeeSetup = (req, res, next) => {
   const { employee_name, employee_email, store_number } = req.body;
 
@@ -133,6 +154,12 @@ const validateEmployeeSetup = (req, res, next) => {
   next();
 };
 
+/**
+ * Validates password change requests.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 const validatePasswordChange = (req, res, next) => {
   const { currentPassword, newPassword } = req.body;
 
@@ -158,6 +185,12 @@ const validatePasswordChange = (req, res, next) => {
   next();
 };
 
+/**
+ * Validates user creation data.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 const validateUserCreate = (req, res, next) => {
   const { username, password } = req.body;
 
@@ -187,6 +220,12 @@ const validateUserCreate = (req, res, next) => {
   next();
 };
 
+/**
+ * Validates user update data.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 const validateUserUpdate = (req, res, next) => {
   const { username, password } = req.body;
 
@@ -216,11 +255,20 @@ const validateUserUpdate = (req, res, next) => {
   next();
 };
 
+/**
+ * Validates if a status value is allowed.
+ * @param {string} status - Status value to validate
+ * @returns {boolean} True if status is valid, false otherwise
+ */
 const validateStatus = (status) => {
   return ALLOWED_STATUSES.includes(status);
 };
 
-// URL validation helper
+/**
+ * Validates if a string is a valid HTTP(S) URL.
+ * @param {string} string - URL string to validate
+ * @returns {boolean} True if valid URL, false otherwise
+ */
 function isValidUrl(string) {
   try {
     const url = new URL(string);
@@ -230,9 +278,13 @@ function isValidUrl(string) {
   }
 }
 
-// Sanitize input helper - trim whitespace only.
-// SQL injection is prevented by parameterized queries; XSS is prevented by React's output escaping.
-// validator.escape() must NOT be used here as it HTML-encodes characters (e.g. / → &#x2F;) corrupting stored data.
+/**
+ * Sanitizes input by trimming whitespace.
+ * Note: SQL injection is prevented by parameterized queries; XSS is prevented by React's output escaping.
+ * validator.escape() is NOT used as it HTML-encodes characters (e.g. / → &#x2F;) corrupting stored data.
+ * @param {*} input - Input to sanitize
+ * @returns {*} Sanitized input (trimmed if string, unchanged otherwise)
+ */
 const sanitizeInput = (input) => {
   if (typeof input === 'string') {
     return input.trim();

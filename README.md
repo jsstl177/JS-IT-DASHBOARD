@@ -185,6 +185,43 @@ Access the settings page (password: admin123 by default) to configure API endpoi
 ### System
 - `GET /health` - Health check endpoint
 
+## Code Quality & Documentation
+
+### Documentation
+- **JSDoc Comments**: All server-side code includes comprehensive JSDoc documentation
+  - Utility functions (`crypto.js`, `logger.js`, `dbHelpers.js`, `constants.js`)
+  - Service modules (SuperOps, Uptime Kuma, Proxmox, N8N, Power BI, Automation Log)
+  - Middleware (error handlers, validation)
+  - Clear parameter and return type documentation
+
+### Error Handling
+- **Global Error Handler**: Centralized error handling with proper HTTP status codes
+- **Async Handler Wrapper**: Catches errors in async route handlers
+- **Service-Level Error Handling**: Each service gracefully handles API failures
+- **Validation Middleware**: Input validation for all endpoints
+- **Timeout Protection**: API calls have configurable timeouts
+- **Graceful Degradation**: Dashboard continues to function even when services are unavailable
+
+### Testing
+- **Unit Tests**: Comprehensive test coverage for:
+  - All service modules (SuperOps, Uptime Kuma, Proxmox, N8N, etc.)
+  - Route handlers (dashboard, settings, employee setup, asset columns)
+  - Validation middleware
+  - Cryptographic utilities
+  - Database helpers
+- **Test Framework**: Jest with Supertest for API testing
+- **Run Tests**: `cd server && npm test`
+- **Coverage Report**: `cd server && npm run test:coverage`
+
+### Security Features
+- **AES-256-GCM Encryption**: Sensitive data encrypted at rest
+- **JWT Authentication**: Secure token-based authentication
+- **Input Sanitization**: All inputs validated and sanitized
+- **Parameterized Queries**: SQL injection prevention
+- **Rate Limiting**: API rate limiting to prevent abuse
+- **Security Headers**: Helmet.js for security headers
+- **Environment Variables**: Secrets managed via environment variables
+
 ## Development
 
 ### Project Structure
@@ -203,6 +240,22 @@ Access the settings page (password: admin123 by default) to configure API endpoi
 ├── docker-compose.yml    # Docker Compose setup
 └── README.md            # This file
 ```
+
+### Code Organization
+
+**Server Architecture:**
+- `routes/` - Express route handlers with authentication
+- `services/` - External API integration modules
+- `middleware/` - Express middleware (error handling, validation)
+- `utils/` - Utility functions (crypto, logging, database, constants)
+- `tests/` - Jest unit and integration tests
+
+**Key Patterns:**
+- **Async/Await**: All async operations use async/await with proper error handling
+- **Promise.allSettled**: Dashboard data fetching uses Promise.allSettled for fault tolerance
+- **Connection Pooling**: MySQL connection pool for efficient database access
+- **Logging**: Structured logging with Winston-style logger
+- **Configuration**: Database-backed configuration with encryption
 
 ### Adding New Services
 
