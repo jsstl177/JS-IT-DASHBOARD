@@ -30,10 +30,12 @@ router.get('/', asyncHandler(async (req, res) => {
         String(ticket.displayId || ticket.id)
       );
       canFetchTickets = true;
+      logger.info(`Successfully fetched ${openTicketIds.length} open tickets from SuperOps`);
     }
   } catch (error) {
-    logger.warn('Error fetching open tickets from SuperOps:', error.message);
-    // If we can't fetch tickets, we'll return only checklists without ticket IDs
+    logger.warn('Error fetching open tickets from SuperOps - showing all checklists:', error.message);
+    // If we can't fetch tickets (auth error, network issue, etc.), show all checklists
+    // Don't filter anything when SuperOps is unavailable/misconfigured
   }
 
   // Fetch all checklists first
@@ -52,7 +54,7 @@ router.get('/', asyncHandler(async (req, res) => {
     checklists = [];
   }
 
-  // Filter out closed tickets
+  // Filter out closed tickets ONLY if we successfully fetched tickets AND have at least one
   if (canFetchTickets && openTicketIds.length > 0) {
     // Include checklists with no ticket_id OR ticket_ids that are in the open list
     logger.info(`Filtering ${checklists.length} checklists against ${openTicketIds.length} open tickets`);
@@ -68,12 +70,11 @@ router.get('/', asyncHandler(async (req, res) => {
     });
     
     logger.info(`After filtering: ${checklists.length} checklists remaining`);
-  } else if (canFetchTickets && openTicketIds.length === 0) {
-    // SuperOps is configured but no open tickets - only show checklists without ticket IDs
-    logger.info('No open tickets found - filtering out all checklists with ticket IDs');
-    checklists = checklists.filter(checklist => !checklist.ticket_id);
+  } else {
+    // If SuperOps not configured, auth failed, or no tickets exist - show ALL checklists
+    // This ensures employee cards appear even when SuperOps has issues
+    logger.info(`Showing all ${checklists.length} checklists (canFetchTickets: ${canFetchTickets}, openTicketCount: ${openTicketIds.length})`);
   }
-  // If canFetchTickets is false, show all checklists (SuperOps not configured)
 
   // Attach items to each checklist
   for (const checklist of checklists) {
