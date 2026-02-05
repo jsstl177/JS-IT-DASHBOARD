@@ -110,7 +110,8 @@ async function getOpenTickets(tenantUrl, apiKey) {
       error: error.message,
       status: error.response?.status
     });
-    return { sourceUrl: tenantUrl, items: [], totalCount: 0 };
+    // Re-throw the error so calling code can handle API failures appropriately
+    throw error;
   }
 }
 
