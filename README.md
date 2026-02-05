@@ -4,27 +4,39 @@ A production-ready, modular, Docker-deployable web dashboard that aggregates IT 
 
 ## Features
 
-- **Modular Design**: Drag-and-drop interface to rearrange dashboard sections
+- **Multi-User System**: JWT-based authentication with role-based access control
+- **User Management**: Admin can create, edit, and delete user accounts
+- **Modular Design**: Drag-and-drop interface with multi-tab dashboard organization
 - **Multiple Data Sources**: Aggregates data from various IT tools with robust error handling
 - **Secure Settings**: Password-protected configuration management with JWT authentication
-- **Multiple Themes**: 5 built-in themes (Default, Dark, High Contrast, Blue Ocean, Forest)
+- **Multiple Themes**: 5 built-in themes (Light, Dark, High Contrast, Blue Ocean, Forest)
+- **Custom Links**: User-specific customizable links for quick access
+- **Alert Management**: View and resolve alerts with severity-based filtering
+- **Ticket Creation**: Submit new tickets directly from the dashboard
 - **Docker Deployment**: Production-ready containerized deployment with health checks
 - **Real-time Updates**: Automatic data refresh every minute with timeout protection
 - **Production Ready**: Comprehensive logging, error handling, rate limiting, and security headers
 - **Unit Testing**: Backend API testing with Jest and Supertest
 - **Input Validation**: Sanitized inputs and comprehensive validation middleware
-- **Customizable Columns**: Configure which columns to display in the Assets module and their order
+- **Customizable Columns**: Configure asset columns, uptime monitor order, and module display names
+- **Configurable Refresh**: Adjustable auto-refresh interval with live countdown
+- **Tab-Based Layout**: Create multiple dashboard tabs with different module arrangements
 
-## Supported Services
+## Supported Services & Modules
 
 1. **Network Status** (Uptime Kuma) - Shows only down/alerting monitors
-2. **Open Cases** (SuperOps) - Displays open tickets
-3. **Assets** (SuperOps) - Asset inventory with customizable column configuration
-4. **New Employee Setup** - Kanban-style checklist management for employee onboarding
-5. **Automation Logs** - Custom log endpoint
-6. **N8N Workflow History** - Recent workflow executions
-7. **Proxmox Status** - Virtualization host information
-8. **Power BI KPI** - Embedded business intelligence reports
+2. **Weekly Uptime** (Uptime Kuma) - Last 7-days uptime statistics with drag-and-drop reordering
+3. **Monthly Uptime** (Uptime Kuma) - Last 30-days uptime statistics with drag-and-drop reordering
+4. **Open Cases** (SuperOps) - Displays open tickets with ticket creation capability
+5. **Alerts** (SuperOps) - Active alerts with severity-based filtering and resolve functionality
+6. **Assets** (SuperOps) - Asset inventory with customizable column configuration
+7. **SuperOps Documentation** - Quick access to IT documentation portal
+8. **New Employee Setup** - Kanban-style checklist management for employee onboarding
+9. **Automation Logs** - Custom log endpoint for monitoring automation status
+10. **N8N Workflow History** - Recent workflow executions with status tracking
+11. **Proxmox Status** - Virtualization host information and resource monitoring
+12. **Power BI KPI** - Embedded business intelligence reports
+13. **Custom Links** - User-specific customizable link management
 
 ## New Employee Setup Module
 
@@ -91,6 +103,80 @@ The Assets module provides a fully customizable table view with configurable col
 
 The search bar now searches across all 13 available asset fields, not just visible columns, making it easy to find assets regardless of your current column configuration.
 
+## User Management
+
+The dashboard includes a comprehensive multi-user authentication system with the following features:
+
+### Features:
+- ✅ **JWT Authentication**: Secure token-based authentication system
+- ✅ **User CRUD Operations**: Create, read, update, and delete users (admin only)
+- ✅ **Password Security**: Bcrypt password hashing with minimum 8-character requirement
+- ✅ **Role-Based Access**: Admin and standard user roles
+- ✅ **Session Management**: Automatic token expiration and refresh
+- ✅ **Protected Admin User**: Admin user cannot be deleted or have username changed
+
+### Admin Capabilities:
+1. **Create Users**: Add new users with username and password
+2. **Edit Users**: Update usernames and reset passwords
+3. **Delete Users**: Remove users (except admin and self)
+4. **View All Users**: See complete user list with creation timestamps
+
+### User-Specific Features:
+- **Custom Links**: Each user maintains their own set of custom links
+- **Column Preferences**: Personal asset column configuration per user
+- **Tab Layouts**: Individual dashboard tab arrangements and layouts
+
+## Dashboard Features
+
+### Alerts Module
+The Alerts module provides comprehensive alert monitoring with actionable controls:
+- ✅ **Severity Levels**: Critical, High, Medium, Low, Info with color-coded chips
+- ✅ **Alert Details**: Asset, policy, status, and timestamp information
+- ✅ **Resolve Functionality**: One-click alert resolution with confirmation
+- ✅ **Auto-Sorting**: Alerts sorted by creation time (newest first)
+- ✅ **Visual Indicators**: Border colors and icons based on severity
+- ✅ **External Links**: Direct links to alert details in SuperOps
+
+### Custom Links Module
+User-specific link management for quick access to frequently used resources:
+- ✅ **CRUD Operations**: Create, read, update, and delete custom links
+- ✅ **URL Validation**: Ensures valid URLs are entered
+- ✅ **User Isolation**: Each user has their own set of links
+- ✅ **Card Layout**: Clean, organized card-based display
+- ✅ **Quick Actions**: Edit, delete, and open links in new tabs
+
+### Uptime Tracking
+Weekly and Monthly uptime modules with advanced features:
+- ✅ **Drag-and-Drop Reordering**: Customize monitor display order
+- ✅ **Persistent Order**: Saved order preserved in browser localStorage
+- ✅ **Priority Sorting**: Automatic priority for WAN/AT&T monitors
+- ✅ **Visual Progress Bars**: Color-coded progress indicators (success/warning/error)
+- ✅ **Percentage Display**: Precise uptime percentages to 2 decimal places
+
+### Multi-Tab Dashboard
+Flexible dashboard organization with customizable tabs:
+- ✅ **Multiple Tabs**: Create unlimited dashboard tabs
+- ✅ **Tab Management**: Rename, reorder, and delete tabs
+- ✅ **Module Assignment**: Drag modules between tabs
+- ✅ **Responsive Grid**: Drag-and-drop, resizable widget layouts
+- ✅ **Layout Persistence**: Tab configurations saved per browser
+- ✅ **Module Display Names**: Customize module titles per user preference
+
+### SuperOps Integration
+Enhanced SuperOps integration beyond basic data display:
+- ✅ **Create Tickets**: Submit new tickets directly from dashboard
+- ✅ **Resolve Alerts**: Mark alerts as resolved via API
+- ✅ **Documentation Access**: Quick link to IT documentation portal
+- ✅ **Asset Search**: Search across all 13 asset fields
+- ✅ **Column Customization**: Configure which asset columns to display
+
+### Configurable Refresh
+Dashboard auto-refresh with user control:
+- ✅ **Adjustable Interval**: Set refresh interval from settings (default: 60 seconds)
+- ✅ **Live Countdown**: Visual countdown timer in header
+- ✅ **Auto-Retry**: Failed requests automatically retry after 10 seconds
+- ✅ **Cross-Tab Sync**: Refresh interval synced across browser tabs
+
 ## Quick Start
 
 ### Using Docker Compose (Recommended)
@@ -143,20 +229,36 @@ cd client && npm start
 ### Environment Variables
 
 - `PORT`: Server port (default: 5000)
-- `JWT_SECRET`: Secret key for JWT tokens
-- `DEFAULT_ADMIN_PASSWORD`: Default admin password for settings
-- `NODE_ENV`: Environment mode
+- `JWT_SECRET`: Secret key for JWT tokens (required for authentication)
+- `DEFAULT_ADMIN_PASSWORD`: Default admin password (default: admin123)
+- `NODE_ENV`: Environment mode (development/production)
+- `DB_HOST`: MariaDB host (default: mariadb)
+- `DB_USER`: MariaDB username
+- `DB_PASSWORD`: MariaDB password
+- `DB_NAME`: Database name (default: dashboard)
+
+### Authentication
+
+Default admin credentials:
+- **Username**: admin
+- **Password**: admin123 (or value of `DEFAULT_ADMIN_PASSWORD` environment variable)
+
+After first login, it's recommended to:
+1. Change the admin password from User Management settings
+2. Create individual user accounts for team members
 
 ### Service Configuration
 
-Access the settings page (password: admin123 by default) to configure API endpoints and credentials for each service:
+Access the settings page to configure API endpoints and credentials for each service:
 
 - **Uptime Kuma**: Base URL of your status page
-- **SuperOps**: Base URL and API key
+- **SuperOps**: Base URL and API key (supports ticket creation, alert resolution, assets, and documentation)
 - **Automation Log**: Base URL of log endpoint
 - **N8N**: Base URL and API key
-- **Proxmox**: Base URL, username, password, and node names (comma-separated in API Key field)
-- **Power BI**: Embed URL
+- **Proxmox**: Base URL, API token ID, and token secret
+- **Power BI**: Embed URL for reports
+
+**Note**: All service credentials are encrypted using AES-256-GCM before storage in the database.
 
 ## API Endpoints
 
@@ -169,6 +271,13 @@ Access the settings page (password: admin123 by default) to configure API endpoi
 - `POST /api/settings` - Save configuration (authenticated)
 - `DELETE /api/settings/:service` - Delete configuration (authenticated)
 
+### User Management
+- `GET /api/users` - Get all users (admin only, authenticated)
+- `POST /api/users` - Create new user (admin only, authenticated)
+- `PUT /api/users/:id` - Update user (admin only, authenticated)
+- `DELETE /api/users/:id` - Delete user (admin only, authenticated)
+- `POST /api/settings/login` - User authentication (returns JWT token)
+
 ### Employee Setup Management
 - `GET /api/employee-setup` - Get all employee setup checklists
 - `POST /api/employee-setup` - Create new employee setup checklist
@@ -176,6 +285,14 @@ Access the settings page (password: admin123 by default) to configure API endpoi
 - `PATCH /api/employee-setup/:checklistId/items/:itemId` - Update checklist item status
 - `PATCH /api/employee-setup/:id/status` - Update checklist status
 - `DELETE /api/employee-setup/:id` - Delete checklist
+
+### Dashboard Operations
+- `POST /api/dashboard/create-case` - Create new SuperOps ticket
+- `POST /api/dashboard/resolve-alert` - Resolve a SuperOps alert
+- `GET /api/dashboard/custom-links` - Get user's custom links (authenticated)
+- `POST /api/dashboard/custom-links` - Create custom link (authenticated)
+- `PUT /api/dashboard/custom-links/:id` - Update custom link (authenticated)
+- `DELETE /api/dashboard/custom-links/:id` - Delete custom link (authenticated)
 
 ### Asset Column Configuration
 - `GET /api/asset-columns/columns` - Get column configuration for user (authenticated)
@@ -266,23 +383,30 @@ Access the settings page (password: admin123 by default) to configure API endpoi
 
 ## Security
 
-- API credentials are stored encrypted in MariaDB database
-- User configurations (column preferences) stored in MariaDB
-- Settings access requires JWT authentication
-- All asset column configuration endpoints require authentication
-- Input validation on all endpoints
-- Rate limiting on API routes
-- Security headers configured with Helmet
-- HTTPS recommended for production deployment
+- **AES-256-GCM Encryption**: All API credentials encrypted at rest in MariaDB
+- **JWT Authentication**: Secure token-based user authentication
+- **Bcrypt Password Hashing**: User passwords hashed with bcrypt (10 rounds)
+- **Role-Based Access Control**: Admin-only endpoints for user and settings management
+- **User Data Isolation**: Custom links and preferences isolated per user
+- **Input Validation**: Comprehensive validation and sanitization on all endpoints
+- **SQL Injection Prevention**: Parameterized queries throughout application
+- **Rate Limiting**: API rate limiting to prevent abuse
+- **Security Headers**: Helmet.js configured for security headers
+- **Session Management**: JWT tokens with expiration and automatic refresh
+- **Protected Admin**: Admin user cannot be deleted or have username changed
+- **HTTPS Recommended**: Use HTTPS for production deployment
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Database errors**: Ensure MariaDB container is running and accessible
-2. **API connection failures**: Check network connectivity and API credentials
+2. **API connection failures**: Check network connectivity and API credentials in Settings
 3. **Build failures**: Ensure all dependencies are installed and Node.js version is compatible
-4. **Column configuration not saving**: Verify JWT authentication is working and check server logs
+4. **Authentication issues**: Verify JWT_SECRET environment variable is set
+5. **Column configuration not saving**: Verify JWT authentication is working and check server logs
+6. **Session expired errors**: Token may have expired; logout and login again
+7. **Custom links not saving**: Ensure user is authenticated and check browser console for errors
 
 ### Logs
 
