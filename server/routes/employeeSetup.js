@@ -54,8 +54,8 @@ router.get('/', asyncHandler(async (req, res) => {
     checklists = [];
   }
 
-  // Filter out closed tickets ONLY if we successfully fetched tickets AND have at least one
-  if (canFetchTickets && openTicketIds.length > 0) {
+  // Filter out closed tickets ONLY if we successfully fetched tickets from SuperOps
+  if (canFetchTickets) {
     // Include checklists with no ticket_id OR ticket_ids that are in the open list
     logger.info(`Filtering ${checklists.length} checklists against ${openTicketIds.length} open tickets`);
     logger.info(`Open ticket IDs: ${JSON.stringify(openTicketIds)}`);
@@ -71,9 +71,9 @@ router.get('/', asyncHandler(async (req, res) => {
     
     logger.info(`After filtering: ${checklists.length} checklists remaining`);
   } else {
-    // If SuperOps not configured, auth failed, or no tickets exist - show ALL checklists
+    // If SuperOps not configured or auth failed - show ALL checklists
     // This ensures employee cards appear even when SuperOps has issues
-    logger.info(`Showing all ${checklists.length} checklists (canFetchTickets: ${canFetchTickets}, openTicketCount: ${openTicketIds.length})`);
+    logger.info(`Showing all ${checklists.length} checklists (SuperOps unavailable)`);
   }
 
   // Attach items to each checklist
