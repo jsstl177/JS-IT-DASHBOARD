@@ -25,9 +25,9 @@ router.get('/', asyncHandler(async (req, res) => {
       const { getOpenTickets } = require('../services/superOps');
       const ticketsData = await getOpenTickets(superOpsSettings.base_url, superOpsSettings.api_key);
 
-      // Collect all open ticket IDs
+      // Collect all open ticket IDs - convert to strings for consistent comparison
       openTicketIds = ticketsData.items.map(ticket =>
-        ticket.displayId || ticket.id
+        String(ticket.displayId || ticket.id)
       );
       canFetchTickets = true;
     }
@@ -55,11 +55,22 @@ router.get('/', asyncHandler(async (req, res) => {
   // Filter out closed tickets
   if (canFetchTickets && openTicketIds.length > 0) {
     // Include checklists with no ticket_id OR ticket_ids that are in the open list
-    checklists = checklists.filter(checklist =>
-      !checklist.ticket_id || openTicketIds.includes(checklist.ticket_id)
-    );
+    logger.info(`Filtering ${checklists.length} checklists against ${openTicketIds.length} open tickets`);
+    logger.info(`Open ticket IDs: ${JSON.stringify(openTicketIds)}`);
+    logger.info(`Checklist ticket IDs: ${JSON.stringify(checklists.map(c => c.ticket_id))}`);
+    
+    checklists = checklists.filter(checklist => {
+      const shouldInclude = !checklist.ticket_id || openTicketIds.includes(String(checklist.ticket_id));
+      if (checklist.ticket_id && !shouldInclude) {
+        logger.info(`Filtering out checklist "${checklist.employee_name}" with closed ticket ${checklist.ticket_id}`);
+      }
+      return shouldInclude;
+    });
+    
+    logger.info(`After filtering: ${checklists.length} checklists remaining`);
   } else if (canFetchTickets && openTicketIds.length === 0) {
     // SuperOps is configured but no open tickets - only show checklists without ticket IDs
+    logger.info('No open tickets found - filtering out all checklists with ticket IDs');
     checklists = checklists.filter(checklist => !checklist.ticket_id);
   }
   // If canFetchTickets is false, show all checklists (SuperOps not configured)
