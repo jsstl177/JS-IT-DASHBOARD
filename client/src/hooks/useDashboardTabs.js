@@ -4,13 +4,14 @@ const STORAGE_KEY = 'dashboardTabs';
 const OLD_LAYOUT_KEY = 'dashboardLayout';
 
 export const ALL_MODULE_KEYS = [
-  'network', 'monthly-uptime', 'tickets', 'alerts', 'assets',
+  'network', 'monthly-uptime', 'weekly-uptime', 'tickets', 'alerts', 'assets',
   'employee-setup', 'logs', 'n8n', 'proxmox', 'powerbi', 'superops-doc', 'custom-links'
 ];
 
 export const MODULE_DISPLAY_NAMES = {
   'network': 'Network Status',
   'monthly-uptime': 'Monthly Uptime',
+  'weekly-uptime': 'Weekly Uptime',
   'tickets': 'Open Cases',
   'alerts': 'Alerts',
   'assets': 'Assets',
@@ -69,15 +70,16 @@ function resetCustomModuleNames() {
 const DEFAULT_LAYOUT = [
   { i: 'network', x: 0, y: 0, w: 6, h: 4 },
   { i: 'monthly-uptime', x: 6, y: 0, w: 6, h: 6 },
-  { i: 'tickets', x: 0, y: 4, w: 6, h: 4 },
-  { i: 'alerts', x: 0, y: 4, w: 6, h: 4 },
-  { i: 'assets', x: 6, y: 4, w: 6, h: 6 },
-  { i: 'employee-setup', x: 0, y: 8, w: 6, h: 6 },
-  { i: 'logs', x: 0, y: 14, w: 6, h: 4 },
-  { i: 'n8n', x: 6, y: 14, w: 6, h: 4 },
-  { i: 'proxmox', x: 0, y: 18, w: 6, h: 4 },
-  { i: 'powerbi', x: 6, y: 18, w: 6, h: 4 },
-  { i: 'superops-doc', x: 0, y: 22, w: 12, h: 10 },
+  { i: 'weekly-uptime', x: 0, y: 4, w: 6, h: 4 },
+  { i: 'tickets', x: 6, y: 4, w: 6, h: 4 },
+  { i: 'alerts', x: 0, y: 8, w: 6, h: 4 },
+  { i: 'assets', x: 6, y: 8, w: 6, h: 6 },
+  { i: 'employee-setup', x: 0, y: 14, w: 6, h: 6 },
+  { i: 'logs', x: 0, y: 20, w: 6, h: 4 },
+  { i: 'n8n', x: 6, y: 20, w: 6, h: 4 },
+  { i: 'proxmox', x: 0, y: 24, w: 6, h: 4 },
+  { i: 'powerbi', x: 6, y: 24, w: 6, h: 4 },
+  { i: 'superops-doc', x: 0, y: 28, w: 12, h: 10 },
 ];
 
 function generateId() {

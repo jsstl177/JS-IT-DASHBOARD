@@ -5,6 +5,7 @@ import { Responsive, WidthProvider } from 'react-grid-layout';
 import axios from 'axios';
 import NetworkStatus from './components/NetworkStatus';
 import MonthlyUptime from './components/MonthlyUptime';
+import WeeklyUptime from './components/WeeklyUptime';
 import OpenTickets from './components/OpenTickets';
 import AutomationLogs from './components/AutomationLogs';
 import N8NExecutions from './components/N8NExecutions';
@@ -195,6 +196,7 @@ function App() {
 
   const networkStatus = dashboardData.networkStatus || {};
   const monthlyUptime = dashboardData.monthlyUptime || {};
+  const weeklyUptime = dashboardData.weeklyUptime || {};
   const openTickets = dashboardData.openTickets || {};
   const automationLogs = dashboardData.automationLogs || {};
   const n8nExecutions = dashboardData.n8nExecutions || {};
@@ -237,6 +239,12 @@ function App() {
       <MonthlyUptime
         data={monthlyUptime.items || []}
         sourceUrl={monthlyUptime.sourceUrl}
+      />
+    ),
+    'weekly-uptime': (
+      <WeeklyUptime
+        data={weeklyUptime.items || []}
+        sourceUrl={weeklyUptime.sourceUrl}
       />
     ),
     'tickets': (

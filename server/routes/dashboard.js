@@ -1,5 +1,5 @@
 const express = require('express');
-const { getNetworkStatus, getMonthlyUptime } = require('../services/uptimeKuma');
+const { getNetworkStatus, getMonthlyUptime, getWeeklyUptime } = require('../services/uptimeKuma');
 const { getOpenTickets, createTicket, getAlerts, getAssets, resolveAlert } = require('../services/superOps');
 const { getAutomationLogs } = require('../services/automationLog');
 const { getWorkflowExecutions } = require('../services/n8n');
@@ -26,6 +26,7 @@ router.get('/data', asyncHandler(async (req, res) => {
     n8nExecutions: { sourceUrl: null, items: [] },
     proxmoxStatus: { sourceUrl: null, items: [] },
     monthlyUptime: { sourceUrl: null, items: [] },
+    weeklyUptime: { sourceUrl: null, items: [] },
     alerts: { sourceUrl: null, items: [], totalCount: 0 },
     assets: { sourceUrl: null, items: [], totalCount: 0 },
     powerbiInfo: null,
@@ -56,12 +57,14 @@ router.get('/data', asyncHandler(async (req, res) => {
       switch (setting.service) {
         case 'uptime-kuma':
           if (setting.base_url) {
-            const [netStatus, monthly] = await Promise.all([
+            const [netStatus, monthly, weekly] = await Promise.all([
               Promise.race([getNetworkStatus(setting.base_url), timeoutPromise(10000, 'Uptime Kuma timeout')]),
-              Promise.race([getMonthlyUptime(setting.base_url), timeoutPromise(10000, 'Uptime Kuma monthly timeout')])
+              Promise.race([getMonthlyUptime(setting.base_url), timeoutPromise(10000, 'Uptime Kuma monthly timeout')]),
+              Promise.race([getWeeklyUptime(setting.base_url), timeoutPromise(10000, 'Uptime Kuma weekly timeout')])
             ]);
             results.networkStatus = netStatus;
             results.monthlyUptime = monthly;
+            results.weeklyUptime = weekly;
           }
           break;
         case 'superops':

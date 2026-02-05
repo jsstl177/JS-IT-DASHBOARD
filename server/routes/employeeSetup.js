@@ -12,7 +12,32 @@ const router = express.Router();
 router.get('/', asyncHandler(async (req, res) => {
   logger.info('Fetching employee setup checklists');
 
-  const checklists = await dbAll(`
+  // First get SuperOps settings and open tickets to filter by status
+  let openTicketIds = [];
+  let canFetchTickets = false;
+  try {
+    const superOpsSettings = await dbGet(
+      'SELECT api_key, base_url FROM settings WHERE service = ?',
+      ['superops']
+    );
+
+    if (superOpsSettings && superOpsSettings.api_key) {
+      const { getOpenTickets } = require('../services/superOps');
+      const ticketsData = await getOpenTickets(superOpsSettings.base_url, superOpsSettings.api_key);
+
+      // Collect all open ticket IDs
+      openTicketIds = ticketsData.items.map(ticket =>
+        ticket.displayId || ticket.id
+      );
+      canFetchTickets = true;
+    }
+  } catch (error) {
+    logger.warn('Error fetching open tickets from SuperOps:', error.message);
+    // If we can't fetch tickets, we'll return only checklists without ticket IDs
+  }
+
+  // Fetch all checklists first
+  let checklists = await dbAll(`
     SELECT c.*,
            COUNT(CASE WHEN i.status = 'completed' THEN 1 END) as completed_items,
            COUNT(i.id) as total_items
@@ -21,6 +46,23 @@ router.get('/', asyncHandler(async (req, res) => {
     GROUP BY c.id
     ORDER BY c.created_at DESC
   `);
+
+  // Ensure checklists is an array (dbAll might return null/undefined)
+  if (!checklists || !Array.isArray(checklists)) {
+    checklists = [];
+  }
+
+  // Filter out closed tickets
+  if (canFetchTickets && openTicketIds.length > 0) {
+    // Include checklists with no ticket_id OR ticket_ids that are in the open list
+    checklists = checklists.filter(checklist =>
+      !checklist.ticket_id || openTicketIds.includes(checklist.ticket_id)
+    );
+  } else if (canFetchTickets && openTicketIds.length === 0) {
+    // SuperOps is configured but no open tickets - only show checklists without ticket IDs
+    checklists = checklists.filter(checklist => !checklist.ticket_id);
+  }
+  // If canFetchTickets is false, show all checklists (SuperOps not configured)
 
   // Attach items to each checklist
   for (const checklist of checklists) {

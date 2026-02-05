@@ -124,4 +124,43 @@ async function getMonthlyUptime(baseUrl) {
   }
 }
 
-module.exports = { getNetworkStatus, getMonthlyUptime, parseUptimeKumaUrl };
+async function getWeeklyUptime(baseUrl) {
+  const { origin, slug } = parseUptimeKumaUrl(baseUrl);
+
+  try {
+    const client = axios.create({ baseURL: origin, timeout: 10000 });
+
+    const statusRes = await client.get(`/api/status-page/${slug}`);
+    const groups = statusRes.data.publicGroupList || [];
+    const monitors = groups.flatMap(group => group.monitorList || []);
+
+    // Fetch 7-day uptime per monitor via the badge API (no auth required)
+    const uptimeResults = await Promise.all(
+      monitors.map(async (monitor) => {
+        try {
+          const res = await client.get(`/api/badge/${monitor.id}/uptime/168`, { timeout: 5000, responseType: 'text' });
+          const match = res.data.match(/>(\d+(?:\.\d+)?)%</);
+          return match ? parseFloat(match[1]) / 100 : null;
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const items = monitors.map((monitor, idx) => ({
+      id: monitor.id,
+      name: monitor.name,
+      uptime: uptimeResults[idx]
+    }));
+
+    return {
+      sourceUrl: `${origin}/status/${slug}`,
+      items
+    };
+  } catch (error) {
+    logger.error('Uptime Kuma weekly uptime API error', { service: 'uptime-kuma', error: error.message });
+    return { sourceUrl: origin, items: [] };
+  }
+}
+
+module.exports = { getNetworkStatus, getMonthlyUptime, getWeeklyUptime, parseUptimeKumaUrl };
