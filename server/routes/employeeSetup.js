@@ -54,37 +54,46 @@ router.get('/', asyncHandler(async (req, res) => {
     checklists = [];
   }
 
-  // Filter out closed tickets ONLY if we successfully fetched tickets from SuperOps
-  if (canFetchTickets) {
-    // Include checklists with no ticket_id OR ticket_ids that are in the open list
-    logger.info(`Filtering ${checklists.length} checklists against ${openTicketIds.length} open tickets`);
-    logger.info(`Open ticket IDs: ${JSON.stringify(openTicketIds)}`);
-    logger.info(`Checklist ticket IDs: ${JSON.stringify(checklists.map(c => c.ticket_id))}`);
+  // Separate active and completed checklists
+  let activeChecklists = [];
+  let completedChecklists = [];
+
+  for (const checklist of checklists) {
+    // A checklist is completed if its status is 'completed'
+    const isCompleted = checklist.status === CHECKLIST_STATUS.COMPLETED;
     
-    checklists = checklists.filter(checklist => {
-      const shouldInclude = !checklist.ticket_id || openTicketIds.includes(String(checklist.ticket_id));
-      if (checklist.ticket_id && !shouldInclude) {
-        logger.info(`Filtering out checklist "${checklist.employee_name}" with closed ticket ${checklist.ticket_id}`);
+    if (isCompleted) {
+      completedChecklists.push(checklist);
+    } else {
+      // For active checklists, filter based on ticket status if SuperOps is available
+      if (canFetchTickets) {
+        const shouldInclude = !checklist.ticket_id || openTicketIds.includes(String(checklist.ticket_id));
+        if (shouldInclude) {
+          activeChecklists.push(checklist);
+        } else {
+          logger.info(`Filtering out checklist "${checklist.employee_name}" with closed ticket ${checklist.ticket_id}`);
+        }
+      } else {
+        // If SuperOps not configured or auth failed - show all active checklists
+        activeChecklists.push(checklist);
       }
-      return shouldInclude;
-    });
-    
-    logger.info(`After filtering: ${checklists.length} checklists remaining`);
-  } else {
-    // If SuperOps not configured or auth failed - show ALL checklists
-    // This ensures employee cards appear even when SuperOps has issues
-    logger.info(`Showing all ${checklists.length} checklists (SuperOps unavailable)`);
+    }
   }
 
+  logger.info(`Active checklists: ${activeChecklists.length}, Completed checklists: ${completedChecklists.length}`);
+
   // Attach items to each checklist
-  for (const checklist of checklists) {
+  for (const checklist of [...activeChecklists, ...completedChecklists]) {
     checklist.items = await dbAll(
       'SELECT * FROM checklist_items WHERE checklist_id = ? ORDER BY category, item_name',
       [checklist.id]
     );
   }
 
-  res.json(checklists);
+  res.json({
+    active: activeChecklists,
+    completed: completedChecklists
+  });
 }));
 
 // Create new employee setup checklist

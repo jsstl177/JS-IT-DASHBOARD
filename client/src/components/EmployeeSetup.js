@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, CardContent, Typography, List, ListItem,
   Checkbox, FormControlLabel, Chip, Button, Grid, Accordion,
-  AccordionSummary, AccordionDetails, Box
+  AccordionSummary, AccordionDetails, Box, Tabs, Tab
 } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
 import axios from 'axios';
@@ -10,16 +10,23 @@ import axios from 'axios';
 const NEW_EMPLOYEE_FORM_URL = 'http://192.168.177.233:5678/form/b989d157-c15d-4f42-bbd5-8aecbb954654';
 
 function EmployeeSetup({ data }) {
-  const [checklists, setChecklists] = useState([]);
+  const [activeChecklists, setActiveChecklists] = useState([]);
+  const [completedChecklists, setCompletedChecklists] = useState([]);
+  const [currentTab, setCurrentTab] = useState(0);
 
   const fetchChecklists = useCallback(async () => {
     try {
       const response = await axios.get('/api/employee-setup');
-      setChecklists(response.data);
+      setActiveChecklists(response.data.active || []);
+      setCompletedChecklists(response.data.completed || []);
     } catch (error) {
       console.error('Error fetching checklists:', error);
     }
   }, []);
+
+  const handleTabChange = (event, newValue) => {
+    setCurrentTab(newValue);
+  };
 
   const getStartDateColor = (startDate) => {
     if (!startDate) return null;
@@ -194,14 +201,31 @@ function EmployeeSetup({ data }) {
           </Box>
         </Box>
 
-        {checklists.length === 0 ? (
+        {/* Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2, flexShrink: 0 }}>
+          <Tabs value={currentTab} onChange={handleTabChange} aria-label="employee setup tabs">
+            <Tab label={`Active (${activeChecklists.length})`} />
+            <Tab label={`Completed (${completedChecklists.length})`} />
+          </Tabs>
+        </Box>
+
+        {/* Tab Content */}
+        {currentTab === 0 && activeChecklists.length === 0 && (
           <Typography variant="body2" color="textSecondary">
-            No employee setup checklists
+            No active employee setup checklists
           </Typography>
-        ) : (
+        )}
+        
+        {currentTab === 1 && completedChecklists.length === 0 && (
+          <Typography variant="body2" color="textSecondary">
+            No completed employee setup checklists
+          </Typography>
+        )}
+
+        {((currentTab === 0 && activeChecklists.length > 0) || (currentTab === 1 && completedChecklists.length > 0)) && (
           <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
             <Grid container spacing={2} sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 2 }}>
-              {checklists.map((checklist) => (
+              {(currentTab === 0 ? activeChecklists : completedChecklists).map((checklist) => (
               <Card 
                 variant="outlined" 
                 key={checklist.id}

@@ -62,10 +62,10 @@ describe('Employee Setup Routes', () => {
 
   // ========== GET / ==========
   describe('GET /api/employee-setup/', () => {
-    it('should return all checklists', async () => {
+    it('should return active and completed checklists', async () => {
       const mockChecklists = [
-        { ...mockChecklist },
-        { ...mockChecklist, id: 2, employee_name: 'Jane Smith' }
+        { ...mockChecklist, status: 'pending' },
+        { ...mockChecklist, id: 2, employee_name: 'Jane Smith', status: 'completed' }
       ];
 
       // First call: dbAll for checklists list query
@@ -79,20 +79,24 @@ describe('Employee Setup Routes', () => {
         .get('/api/employee-setup/');
 
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body).toHaveLength(2);
-      expect(response.body[0].employee_name).toBe('John Doe');
-      expect(response.body[1].employee_name).toBe('Jane Smith');
+      expect(response.body).toHaveProperty('active');
+      expect(response.body).toHaveProperty('completed');
+      expect(Array.isArray(response.body.active)).toBe(true);
+      expect(Array.isArray(response.body.completed)).toBe(true);
+      expect(response.body.active).toHaveLength(1);
+      expect(response.body.completed).toHaveLength(1);
+      expect(response.body.active[0].employee_name).toBe('John Doe');
+      expect(response.body.completed[0].employee_name).toBe('Jane Smith');
     });
 
-    it('should return empty array when no checklists exist', async () => {
+    it('should return empty arrays when no checklists exist', async () => {
       dbAll.mockResolvedValue([]);
 
       const response = await request(app)
         .get('/api/employee-setup/');
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual([]);
+      expect(response.body).toEqual({ active: [], completed: [] });
     });
   });
 
