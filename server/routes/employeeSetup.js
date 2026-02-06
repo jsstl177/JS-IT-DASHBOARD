@@ -41,7 +41,7 @@ router.get('/', asyncHandler(async (req, res) => {
   // Fetch all checklists first
   let checklists = await dbAll(`
     SELECT c.*,
-           COUNT(CASE WHEN i.status = 'completed' THEN 1 END) as completed_items,
+           COUNT(CASE WHEN i.status IN ('completed', 'na') THEN 1 END) as completed_items,
            COUNT(i.id) as total_items
     FROM employee_setup_checklist c
     LEFT JOIN checklist_items i ON c.id = i.checklist_id
@@ -59,24 +59,22 @@ router.get('/', asyncHandler(async (req, res) => {
   let completedChecklists = [];
 
   for (const checklist of checklists) {
-    // A checklist is completed if its status is 'completed'
     const isCompleted = checklist.status === CHECKLIST_STATUS.COMPLETED;
-    
+
     if (isCompleted) {
       completedChecklists.push(checklist);
+    } else if (canFetchTickets && checklist.ticket_id && !openTicketIds.includes(String(checklist.ticket_id))) {
+      // Ticket is closed in SuperOps — auto-complete the checklist and move to done
+      await dbRun(`
+        UPDATE employee_setup_checklist
+        SET status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `, [CHECKLIST_STATUS.COMPLETED, checklist.id]);
+      checklist.status = CHECKLIST_STATUS.COMPLETED;
+      completedChecklists.push(checklist);
+      logger.info(`Auto-completed checklist "${checklist.employee_name}" — ticket ${checklist.ticket_id} is closed`);
     } else {
-      // For active checklists, filter based on ticket status if SuperOps is available
-      if (canFetchTickets) {
-        const shouldInclude = !checklist.ticket_id || openTicketIds.includes(String(checklist.ticket_id));
-        if (shouldInclude) {
-          activeChecklists.push(checklist);
-        } else {
-          logger.info(`Filtering out checklist "${checklist.employee_name}" with closed ticket ${checklist.ticket_id}`);
-        }
-      } else {
-        // If SuperOps not configured or auth failed - show all active checklists
-        activeChecklists.push(checklist);
-      }
+      activeChecklists.push(checklist);
     }
   }
 
@@ -236,7 +234,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 async function getChecklistById(id) {
   const checklist = await dbGet(`
     SELECT c.*,
-           COUNT(CASE WHEN i.status = 'completed' THEN 1 END) as completed_items,
+           COUNT(CASE WHEN i.status IN ('completed', 'na') THEN 1 END) as completed_items,
            COUNT(i.id) as total_items
     FROM employee_setup_checklist c
     LEFT JOIN checklist_items i ON c.id = i.checklist_id
