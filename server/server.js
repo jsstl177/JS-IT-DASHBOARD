@@ -69,6 +69,7 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "https:"],
+      upgradeInsecureRequests: null,
     },
   },
 }));
