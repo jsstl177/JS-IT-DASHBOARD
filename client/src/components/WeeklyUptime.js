@@ -129,32 +129,52 @@ function WeeklyUptime({ data, sourceUrl }) {
     dragCounter.current = 0;
   }, []);
 
+  const priorityItems = items.filter(i => isPriority(i.name) && i.uptime != null);
+  const avgUptime = priorityItems.length > 0
+    ? priorityItems.reduce((sum, i) => sum + i.uptime, 0) / priorityItems.length
+    : null;
+
   return (
     <Card sx={{ height: '100%' }}>
       <CardContent>
-        <Typography variant="h6" component="h2" sx={{ fontSize: '24pt', fontWeight: 'bold' }}>
-          Last 7-Days Uptime
-          <Typography variant="body2" component="span" sx={{ ml: 1, fontWeight: 'normal', color: 'text.secondary' }}>
-            ({getDateRange(7)})
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+          <Typography variant="h6" component="h2" sx={{ fontSize: '24pt', fontWeight: 'bold' }}>
+            Last 7-Days Uptime
+            <Typography variant="body2" component="span" sx={{ ml: 1, fontWeight: 'normal', color: 'text.secondary' }}>
+              ({getDateRange(7)})
+            </Typography>
+            {sourceUrl && (
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ marginLeft: '10px', fontSize: '14px' }}
+              >
+                Open
+              </a>
+            )}
+            {items.length > 0 && (
+              <Chip
+                label={items.length}
+                size="small"
+                sx={{ ml: 1, verticalAlign: 'middle' }}
+              />
+            )}
           </Typography>
-          {sourceUrl && (
-            <a
-              href={sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ marginLeft: '10px', fontSize: '14px' }}
+          {avgUptime != null && (
+            <Typography
+              variant="body1"
+              sx={{
+                fontWeight: 700,
+                fontSize: '1.1rem',
+                whiteSpace: 'nowrap',
+                color: getColor(avgUptime) + '.main',
+              }}
             >
-              Open
-            </a>
+              AVG UPTIME FOR PERIOD: {formatUptime(avgUptime)}
+            </Typography>
           )}
-          {items.length > 0 && (
-            <Chip
-              label={items.length}
-              size="small"
-              sx={{ ml: 1, verticalAlign: 'middle' }}
-            />
-          )}
-        </Typography>
+        </Box>
 
         {items.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
