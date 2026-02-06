@@ -49,6 +49,14 @@ function sortItems(items, savedOrder) {
   });
 }
 
+function getDateRange(days) {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - days);
+  const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `${fmt(start)} - ${fmt(end)}`;
+}
+
 function MonthlyUptime({ data, sourceUrl }) {
   const items = data || [];
 
@@ -126,6 +134,9 @@ function MonthlyUptime({ data, sourceUrl }) {
       <CardContent>
         <Typography variant="h6" component="h2" sx={{ fontSize: '24pt', fontWeight: 'bold' }}>
           Last 30-Days Uptime
+          <Typography variant="body2" component="span" sx={{ ml: 1, fontWeight: 'normal', color: 'text.secondary' }}>
+            ({getDateRange(30)})
+          </Typography>
           {sourceUrl && (
             <a
               href={sourceUrl}
