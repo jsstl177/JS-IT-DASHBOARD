@@ -1,3 +1,8 @@
+/**
+ * @fileoverview N8N workflow execution history component.
+ * Displays recent workflow runs with status chips (success/error/running).
+ */
+
 import React from 'react';
 import { Card, CardContent, Typography, List, ListItem, ListItemText, Chip } from '@mui/material';
 

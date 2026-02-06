@@ -1,37 +1,48 @@
-# Production stage - uses pre-built client files
+# =============================================================================
+# JS IT Dashboard - Production Build (Pre-Built Client)
+# =============================================================================
+# Uses a pre-built client from the local filesystem.
+# Faster than the multi-stage Dockerfile when the client is already built.
+# Usage: docker build -f Dockerfile.prod -t js-it-dashboard .
+# =============================================================================
+
 FROM node:18-alpine
 
-# Install dumb-init and build tools for native dependencies
-RUN apk add --no-cache dumb-init python3 make g++
+# Install dumb-init for proper PID 1 signal handling in containers
+# python3/make/g++ needed for native module compilation (bcrypt, etc.)
+RUN apk update && apk add --no-cache dumb-init python3 make g++
 
-# Create app user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-# Set working directory
 WORKDIR /app
 
-# Copy server dependencies and source
-COPY server/package*.json server/package-lock.json ./
-RUN npm install --only=production
+# Copy server dependencies and install (production only)
+COPY server/package*.json ./
+RUN npm ci --only=production && \
+    npm cache clean --force
 
-# Copy server source
+# Copy server source code
 COPY server/ ./
 
-# Copy pre-built client from local build
+# Copy pre-built React client from local build directory
 COPY client/build ./client/build
 
-# Change ownership
+# Create logs directory
+RUN mkdir -p logs
+
+# Set ownership to non-root user
 RUN chown -R nodejs:nodejs /app
 USER nodejs
 
-# Expose port
+# Expose application port
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Health check: verify the application is responding
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node healthcheck.js
 
-# Start the application
+# Use dumb-init as PID 1 for proper signal forwarding
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "server.js"]

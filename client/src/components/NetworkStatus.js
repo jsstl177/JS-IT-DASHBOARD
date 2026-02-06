@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Network status monitor component.
+ * Displays down, maintenance, and pending monitors from Uptime Kuma.
+ * Shows "All Systems Operational" when no monitors are alerting.
+ */
+
 import React from 'react';
 import {
   Card, CardContent, Typography, List, ListItem, ListItemText,

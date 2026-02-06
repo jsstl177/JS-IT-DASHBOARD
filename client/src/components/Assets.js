@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Asset inventory component with customizable columns.
+ * Displays SuperOps assets in a searchable table with per-user
+ * column visibility and ordering configuration stored in the database.
+ */
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Card, CardContent, Typography, Box, Chip, TextField,

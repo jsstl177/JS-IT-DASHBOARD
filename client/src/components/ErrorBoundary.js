@@ -1,3 +1,9 @@
+/**
+ * @fileoverview React error boundary component.
+ * Catches rendering errors in child components and displays a recovery UI
+ * instead of crashing the entire application.
+ */
+
 import React from 'react';
 import { Card, CardContent, Typography, Button } from '@mui/material';
 

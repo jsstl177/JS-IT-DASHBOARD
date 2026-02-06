@@ -2,5 +2,7 @@ node_modules/
 .env
 *.db
 server/logs/
+logs/
 client/build/
+coverage/
 .DS_Store

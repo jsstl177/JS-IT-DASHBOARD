@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Employee onboarding checklist component.
+ * Kanban-style card system for tracking new hire setup progress across
+ * categories (Domain, M365, Dashlane, INFORM, etc.) with auto-refresh
+ * and automatic status progression.
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, CardContent, Typography, List, ListItem,

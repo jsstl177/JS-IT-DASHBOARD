@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Custom hook for managing settings panel layout.
+ * Persists the grid layout configuration for settings modules
+ * in localStorage with reset-to-defaults capability.
+ */
+
 import { useState, useCallback } from 'react';
 
 const STORAGE_KEY = 'settingsLayout';

@@ -1,15 +1,20 @@
-# Build stage
+# =============================================================================
+# JS IT Dashboard - Multi-Stage Production Build
+# =============================================================================
+# Stage 1: Build the React client
+# Stage 2: Production runtime with only server code and pre-built client
+# =============================================================================
+
+# ─── Stage 1: Builder ───────────────────────────────────────────────────────
 FROM node:18-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY server/package*.json server/package-lock.json ./server/
-COPY client/package*.json client/package-lock.json ./client/
-# Updated lock files
+# Copy dependency manifests first (better Docker layer caching)
+COPY server/package*.json ./server/
+COPY client/package*.json ./client/
 
-# Install dependencies
+# Install dependencies (server: production only, client: all for build tooling)
 RUN cd server && npm ci --only=production
 RUN cd client && npm install
 
@@ -17,44 +22,47 @@ RUN cd client && npm install
 COPY server/ ./server/
 COPY client/ ./client/
 
-# Build the client
+# Build the React client for production
 RUN cd client && npm run build
 
-# Production stage
+# ─── Stage 2: Production Runtime ────────────────────────────────────────────
 FROM node:18-alpine
 
-# Install dumb-init and build tools for native dependencies
+# Install dumb-init for proper PID 1 signal handling in containers
+# python3/make/g++ needed for native module compilation (bcrypt, etc.)
 RUN apk add --no-cache dumb-init python3 make g++
 
-# Create app user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-# Set working directory
 WORKDIR /app
 
-# Copy server dependencies and source
-COPY server/package*.json server/package-lock.json ./
-RUN npm install --only=production
+# Copy server dependencies and install (production only)
+COPY server/package*.json ./
+RUN npm ci --only=production && \
+    npm cache clean --force
 
-# Copy server source
+# Copy server source code
 COPY server/ ./
-# Updated server code v4 - alerts + assets
 
-# Copy built client
+# Copy pre-built React client from builder stage
 COPY --from=builder /app/client/build ./client/build
 
-# Change ownership
+# Create logs directory
+RUN mkdir -p logs
+
+# Set ownership to non-root user
 RUN chown -R nodejs:nodejs /app
 USER nodejs
 
-# Expose port
+# Expose application port
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Health check: verify the application is responding
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node healthcheck.js
 
-# Start the application
+# Use dumb-init as PID 1 for proper signal forwarding
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "server.js"]

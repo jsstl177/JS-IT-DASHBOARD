@@ -1,4 +1,14 @@
-// Default checklist items based on the New Employee Setup document
+/**
+ * @fileoverview Default checklist items for new employee onboarding.
+ *
+ * Based on the "New Employee Setup" process document. Each item represents
+ * a task that must be completed when onboarding a new hire, organised by
+ * category (Domain, Outlook Email, M365, Dashlane, INFORM, etc.).
+ *
+ * These items are inserted into the checklist_items table whenever a new
+ * employee setup checklist is created.
+ */
+
 const defaultChecklistItems = [
   // 1. Domain
   {

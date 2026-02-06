@@ -1,3 +1,9 @@
+/**
+ * @fileoverview User management component (admin only).
+ * Provides CRUD operations for user accounts including creation,
+ * password resets, and deletion with admin account protection.
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   Card, CardContent, Typography, TextField, Button, Grid,

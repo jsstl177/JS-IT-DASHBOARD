@@ -1,3 +1,24 @@
+/**
+ * @fileoverview Main Express application server for the JS IT Dashboard.
+ *
+ * This server provides a REST API for aggregating IT monitoring data from
+ * multiple sources (SuperOps, Uptime Kuma, Proxmox, N8N, etc.) and serves
+ * the React frontend in production mode.
+ *
+ * Features:
+ * - JWT-based authentication with role-based access control
+ * - AES-256-GCM encryption for credentials at rest
+ * - Rate limiting, security headers, and CORS protection
+ * - Graceful shutdown with connection draining
+ * - Health check endpoint for Docker container monitoring
+ *
+ * @requires express
+ * @requires cors
+ * @requires compression
+ * @requires helmet
+ * @requires jsonwebtoken
+ */
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -5,6 +26,7 @@ const crypto = require('crypto');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const { errorHandler, asyncHandler, notFoundHandler } = require('./middleware/errorHandler');
@@ -12,11 +34,15 @@ const logger = require('./utils/logger');
 const db = require('./db');
 const pkg = require('./package.json');
 
+// ─── Application Setup ──────────────────────────────────────────────────────
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Startup validation for required environment variables
+// ─── Environment Validation ─────────────────────────────────────────────────
+// Validate required secrets are set and not using placeholder values
+
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET || JWT_SECRET === 'your-secret-key' || JWT_SECRET === 'your-super-secret-jwt-key-change-this' || JWT_SECRET === 'your-super-secret-jwt-key-change-this-in-production') {
   logger.error('FATAL: JWT_SECRET is missing or set to a placeholder value. Set a strong secret in your .env file.');
@@ -29,10 +55,12 @@ if (!ENCRYPTION_KEY) {
   process.exit(1);
 }
 
-// Response compression
+// ─── Middleware Stack ───────────────────────────────────────────────────────
+
+// Gzip compression for all responses
 app.use(compression());
 
-// Security middleware
+// Security headers via Helmet (CSP, X-Frame-Options, HSTS, etc.)
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -45,17 +73,17 @@ app.use(helmet({
   },
 }));
 
-// Rate limiting
+// Rate limiting: prevent abuse on all API routes
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isProduction ? 100 : 1000,
+  windowMs: 15 * 60 * 1000, // 15-minute window
+  max: isProduction ? 100 : 1000, // stricter in production
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use('/api/', limiter);
 
-// CORS configuration
+// CORS configuration: restrict origins in production
 const corsOptions = {
   origin: isProduction
     ? (process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true)
@@ -65,18 +93,18 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Body parsing middleware
+// Body parsing with size limits to prevent payload attacks
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request ID middleware
+// Request ID: unique identifier for each request (used in logging and error responses)
 app.use((req, res, next) => {
   req.id = crypto.randomUUID();
   res.setHeader('X-Request-ID', req.id);
   next();
 });
 
-// Request logging middleware
+// Request logging: log method, URL, duration, and status code
 app.use((req, res, next) => {
   const start = Date.now();
   logger.info(`${req.method} ${req.url}`, {
@@ -95,7 +123,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Static files — hashed assets are long-cached; index.html is never cached
+// Static file serving: hashed assets are long-cached; index.html is never cached
 app.use(express.static(path.join(__dirname, 'client/build'), {
   setHeaders(res, filePath) {
     if (filePath.endsWith('index.html')) {
@@ -104,8 +132,17 @@ app.use(express.static(path.join(__dirname, 'client/build'), {
   }
 }));
 
-// Authentication middleware for protected routes
-const jwt = require('jsonwebtoken');
+// ─── Authentication Middleware ───────────────────────────────────────────────
+
+/**
+ * JWT authentication middleware for protected routes.
+ * Extracts and validates the Bearer token from the Authorization header.
+ * On success, attaches decoded user payload to req.user.
+ *
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -123,16 +160,23 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Apply authentication to all dashboard and data routes
+// ─── Route Registration ─────────────────────────────────────────────────────
+
+// Protected routes: require JWT authentication
 app.use('/api/dashboard', authenticateToken, require('./routes/dashboard'));
 app.use('/api/employee-setup', authenticateToken, require('./routes/employeeSetup'));
 app.use('/api/asset-columns', authenticateToken, require('./routes/assetColumns'));
 
-// Settings and users routes handle their own authentication internally
+// Self-authenticating routes: handle their own JWT verification internally
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/users', require('./routes/users'));
 
-// Enhanced health check endpoint
+// ─── Health Check ───────────────────────────────────────────────────────────
+
+/**
+ * Health check endpoint for Docker and load balancer monitoring.
+ * Returns 200 if healthy, 503 if database is unreachable.
+ */
 app.get('/health', asyncHandler(async (req, res) => {
   let dbStatus = 'healthy';
 
@@ -154,19 +198,21 @@ app.get('/health', asyncHandler(async (req, res) => {
   });
 }));
 
-// Catch-all handler for React Router (Express 5 named wildcard syntax)
+// ─── SPA Catch-All ──────────────────────────────────────────────────────────
+
+// Serve index.html for all non-API routes (React Router support)
 app.get('/{*splat}', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(__dirname, 'client/build/index.html'));
 });
 
-// 404 handler
-app.use(notFoundHandler);
+// ─── Error Handling ─────────────────────────────────────────────────────────
 
-// Error handling middleware (must be last)
+app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Start the server and store the instance for graceful shutdown
+// ─── Server Startup ─────────────────────────────────────────────────────────
+
 const server = app.listen(PORT, '0.0.0.0', () => {
   logger.info(`Server running on port ${PORT}`, {
     environment: process.env.NODE_ENV || 'development',
@@ -174,7 +220,14 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   });
 });
 
-// Graceful shutdown with connection draining
+// ─── Graceful Shutdown ──────────────────────────────────────────────────────
+
+/**
+ * Handles graceful shutdown by closing HTTP connections and database pool.
+ * Uses a 10-second timeout as a safety net to force exit if draining stalls.
+ *
+ * @param {string} signal - The signal that triggered shutdown (SIGTERM or SIGINT)
+ */
 function gracefulShutdown(signal) {
   logger.info(`${signal} received, shutting down gracefully`);
 
@@ -189,7 +242,7 @@ function gracefulShutdown(signal) {
     process.exit(0);
   });
 
-  // Force exit after 10 seconds as a safety net
+  // Force exit after 10 seconds if connections don't drain
   setTimeout(() => {
     logger.error('Forced shutdown after timeout');
     process.exit(1);

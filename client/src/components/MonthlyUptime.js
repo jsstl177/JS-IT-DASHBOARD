@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Monthly uptime statistics component.
+ * Shows 30-day uptime percentages with drag-and-drop reordering
+ * and color-coded progress bars. Sort order persists in localStorage.
+ */
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Card, CardContent, Typography, Chip, Box, LinearProgress

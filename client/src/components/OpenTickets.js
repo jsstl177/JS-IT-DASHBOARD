@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Open tickets component for SuperOps integration.
+ * Displays active support cases with priority indicators, activity status,
+ * and a dialog for creating new tickets directly from the dashboard.
+ */
+
 import React, { useState } from 'react';
 import {
   Card, CardContent, Typography, List, ListItem, ListItemText,

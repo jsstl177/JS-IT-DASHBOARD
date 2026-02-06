@@ -1,3 +1,16 @@
+# =============================================================================
+# JS IT Dashboard - Docker Compose Configuration
+# =============================================================================
+# Services:
+#   - dashboard: Node.js/Express application (port 5001 → 5000)
+#   - mariadb:   MariaDB 10.11 database (port 3306)
+#
+# Usage:
+#   docker-compose up --build        # Build and start all services
+#   docker-compose down              # Stop and remove containers
+#   docker-compose logs -f dashboard # Follow application logs
+# =============================================================================
+
 services:
   dashboard:
     build:

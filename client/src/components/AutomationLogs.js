@@ -1,6 +1,13 @@
+/**
+ * @fileoverview Automation log viewer component.
+ * Displays real-time automation workflow logs with status indicators,
+ * file queue counts, and color-coded log output.
+ */
+
 import React from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 
+/** Returns a CSS color based on log line severity keywords. */
 function getLogLineColor(line) {
   if (/ - WARNING - /.test(line)) return '#FFC107';
   if (/ - ERROR - /.test(line)) return '#F44336';

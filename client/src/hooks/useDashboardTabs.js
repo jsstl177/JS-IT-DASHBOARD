@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Custom hook for managing dashboard tab state.
+ * Handles tab CRUD, module assignment between tabs, layout persistence
+ * in localStorage, custom module display names, and legacy migration.
+ */
+
 import { useState, useCallback } from 'react';
 
 const STORAGE_KEY = 'dashboardTabs';

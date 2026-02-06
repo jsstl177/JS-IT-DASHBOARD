@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Dashboard settings panel component.
+ * Provides configuration management for all integrated services (Uptime Kuma,
+ * SuperOps, N8N, Proxmox, etc.), user management, password changes, and
+ * refresh interval settings with connection testing functionality.
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   Card, CardContent, Typography, TextField, Button, Grid,

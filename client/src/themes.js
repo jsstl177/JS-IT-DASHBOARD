@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Material-UI theme definitions for the dashboard.
+ * Provides light and dark themes with Johnstone Supply branding,
+ * shared typography, rounded component styling, and consistent spacing.
+ */
+
 import { createTheme } from '@mui/material/styles';
 
 const sharedTypography = {

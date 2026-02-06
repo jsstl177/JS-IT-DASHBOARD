@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Main application component for the JS IT Dashboard.
+ * Manages authentication state, dashboard data fetching with auto-refresh,
+ * theme switching, tab-based layout, and module rendering. Serves as the
+ * root component that orchestrates all dashboard modules.
+ */
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, Snackbar, Alert, Box, Typography } from '@mui/material';

@@ -1,19 +1,27 @@
 /**
- * @fileoverview Error handling middleware for Express application.
+ * @fileoverview Centralized error handling middleware for Express.
+ *
+ * Provides three exports:
+ *  - errorHandler: global error-handling middleware (4 args)
+ *  - asyncHandler: wraps async route handlers to forward rejected promises
+ *  - notFoundHandler: catches requests that matched no route
+ *
+ * In production, stack traces are hidden from the response body.
  */
 
 const logger = require('../utils/logger');
 
 /**
  * Global error handling middleware.
- * Logs errors and sends appropriate responses to clients.
- * @param {Error} err - Error object
+ * Logs the error with context and returns a sanitised JSON response.
+ *
+ * @param {Error} err - The error thrown or passed via next(err)
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
+ * @param {Function} next - Express next middleware function (unused but required by Express)
  */
 const errorHandler = (err, req, res, next) => {
-  // Log the error
+  // Log full details for debugging
   logger.error('Error occurred:', {
     message: err.message,
     stack: err.stack,
@@ -24,20 +32,20 @@ const errorHandler = (err, req, res, next) => {
     requestId: req.id
   });
 
-  // Don't expose internal errors in production
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   let statusCode = err.statusCode || err.status || 500;
   let message = err.message || 'Internal Server Error';
 
-  // Handle specific error types
+  // Map well-known error types to appropriate HTTP status codes
   if (err.name === 'ValidationError') {
     statusCode = 400;
     message = 'Validation Error';
   } else if (err.name === 'UnauthorizedError') {
     statusCode = 401;
     message = 'Unauthorized';
-  } else if (err.code === 'SQLITE_CONSTRAINT') {
+  } else if (err.code === 'ER_DUP_ENTRY') {
+    // MariaDB/MySQL unique constraint violation
     statusCode = 409;
     message = 'Database constraint violation';
   } else if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED') {
@@ -45,7 +53,7 @@ const errorHandler = (err, req, res, next) => {
     message = 'Service temporarily unavailable';
   }
 
-  // In production, don't send stack traces
+  // Never expose stack traces to clients in production
   const errorResponse = {
     error: message,
     ...(req.id && { requestId: req.id }),
@@ -56,16 +64,20 @@ const errorHandler = (err, req, res, next) => {
 };
 
 /**
- * Wraps async route handlers to catch errors and pass to error middleware.
- * @param {Function} fn - Async route handler function
- * @returns {Function} Express middleware function
+ * Wraps an async route handler so that any rejected promise is forwarded
+ * to Express error-handling middleware via next(err).
+ *
+ * @param {Function} fn - Async route handler (req, res, next) => Promise
+ * @returns {Function} Express middleware that catches async errors
  */
 const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
 /**
- * Handles 404 Not Found errors for unmatched routes.
+ * Catch-all middleware for requests that did not match any route.
+ * Creates a 404 error and passes it to the error handler.
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function

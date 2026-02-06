@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Custom quick-access links component.
+ * Allows users to create, edit, and delete personal bookmarks displayed
+ * as cards on the dashboard. Links are stored per-user in the database.
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   Box,

@@ -1,8 +1,8 @@
 {
-  "name": "client",
-  "version": "0.1.0",
+  "name": "js-it-dashboard-client",
+  "version": "1.0.0",
   "private": true,
-  "proxy": "http://localhost:5005",
+  "description": "React frontend for the JS IT Dashboard",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
@@ -16,6 +16,13 @@
     "react-grid-layout": "^1.4.4",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "http-proxy-middleware": "^3.0.5",
+    "jest-environment-jsdom": "^30.2.0"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -44,12 +51,5 @@
       "safari >= 12",
       "ios_saf >= 12"
     ]
-  },
-  "devDependencies": {
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
-    "http-proxy-middleware": "^3.0.5",
-    "jest-environment-jsdom": "^30.2.0"
   }
 }

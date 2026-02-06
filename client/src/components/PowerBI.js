@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Power BI embedded report component.
+ * Provides a link to the configured Power BI report for viewing
+ * business intelligence KPIs and analytics.
+ */
+
 import React from 'react';
 import { Card, CardContent, Typography, Button, Box } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';

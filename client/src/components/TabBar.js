@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Dashboard tab management component.
+ * Handles tab creation, renaming, deletion, reordering, and module
+ * assignment between tabs with drag-and-drop support. Provides context
+ * menus for advanced operations and module display name customization.
+ */
+
 import React, { useState, useCallback, useRef } from 'react';
 import {
   Tabs,

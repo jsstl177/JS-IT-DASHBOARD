@@ -1,421 +1,400 @@
 # JS IT Dashboard
 
-A production-ready, modular, Docker-deployable web dashboard that aggregates IT monitoring data from multiple sources including Uptime Kuma, SuperOps, Proxmox, N8N workflows, and Power BI.
+A production-ready, Docker-deployable web dashboard that aggregates IT monitoring data from multiple sources including Uptime Kuma, SuperOps, Proxmox VE, N8N workflows, and Power BI.
+
+**Version**: BETA 5 - Base Application
+
+## Tech Stack
+
+| Layer      | Technology                                      |
+| ---------- | ----------------------------------------------- |
+| Frontend   | React 19, Material UI 7, React Grid Layout      |
+| Backend    | Node.js 18+, Express 5                          |
+| Database   | MariaDB 10.11 (mysql2 connection pool)           |
+| Auth       | JWT (jsonwebtoken), bcryptjs password hashing    |
+| Encryption | AES-256-GCM (Node.js crypto)                    |
+| Security   | Helmet.js, express-rate-limit, CORS, validator   |
+| Container  | Docker multi-stage builds, dumb-init, Compose    |
+| Testing    | Jest, Supertest, React Testing Library           |
 
 ## Features
 
-- **Multi-User System**: JWT-based authentication with role-based access control
-- **User Management**: Admin can create, edit, and delete user accounts
-- **Modular Design**: Drag-and-drop interface with multi-tab dashboard organization
-- **Multiple Data Sources**: Aggregates data from various IT tools with robust error handling
-- **Secure Settings**: Password-protected configuration management with JWT authentication
-- **Multiple Themes**: 5 built-in themes (Light, Dark, High Contrast, Blue Ocean, Forest)
-- **Custom Links**: User-specific customizable links for quick access
-- **Alert Management**: View and resolve alerts with severity-based filtering
-- **Ticket Creation**: Submit new tickets directly from the dashboard
-- **Docker Deployment**: Production-ready containerized deployment with health checks
-- **Real-time Updates**: Automatic data refresh every minute with timeout protection
-- **Production Ready**: Comprehensive logging, error handling, rate limiting, and security headers
-- **Unit Testing**: Backend API testing with Jest and Supertest
-- **Input Validation**: Sanitized inputs and comprehensive validation middleware
-- **Customizable Columns**: Configure asset columns, uptime monitor order, and module display names
-- **Configurable Refresh**: Adjustable auto-refresh interval with live countdown
-- **Tab-Based Layout**: Create multiple dashboard tabs with different module arrangements
+- **Multi-User Authentication** - JWT-based auth with role-based access control (admin/standard)
+- **Modular Dashboard** - Drag-and-drop, resizable widget grid with multi-tab organization
+- **13 Service Modules** - Integrates Uptime Kuma, SuperOps, Proxmox, N8N, Power BI, and more
+- **Encrypted Credentials** - All service API keys encrypted at rest with AES-256-GCM
+- **5 Built-in Themes** - Light, Dark, High Contrast, Blue Ocean, Forest
+- **Custom Links** - Per-user customizable quick-access links
+- **Alert Management** - View and resolve SuperOps alerts with severity-based filtering
+- **Ticket Creation** - Submit new SuperOps tickets directly from the dashboard
+- **Employee Onboarding** - Kanban-style checklist for tracking new hire setup
+- **Asset Management** - Customizable columns, full-text search across 13 fields
+- **Auto-Refresh** - Configurable interval with live countdown timer
+- **Production Hardened** - Rate limiting, security headers, structured logging, graceful shutdown
 
-## Supported Services & Modules
+## Supported Modules
 
-1. **Network Status** (Uptime Kuma) - Shows only down/alerting monitors
-2. **Weekly Uptime** (Uptime Kuma) - Last 7-days uptime statistics with drag-and-drop reordering
-3. **Monthly Uptime** (Uptime Kuma) - Last 30-days uptime statistics with drag-and-drop reordering
-4. **Open Cases** (SuperOps) - Displays open tickets with ticket creation capability
-5. **Alerts** (SuperOps) - Active alerts with severity-based filtering and resolve functionality
-6. **Assets** (SuperOps) - Asset inventory with customizable column configuration
-7. **SuperOps Documentation** - Quick access to IT documentation portal
-8. **New Employee Setup** - Kanban-style checklist management for employee onboarding
-9. **Automation Logs** - Custom log endpoint for monitoring automation status
-10. **N8N Workflow History** - Recent workflow executions with status tracking
-11. **Proxmox Status** - Virtualization host information and resource monitoring
-12. **Power BI KPI** - Embedded business intelligence reports
-13. **Custom Links** - User-specific customizable link management
-
-## New Employee Setup Module
-
-The dashboard includes a specialized Kanban-style card system for tracking new employee setup progress. This module automatically creates checklists based on the comprehensive setup process for new hires, including:
-
-- **Outlook Email** configuration
-- **JEN** user setup
-- **JU Online** account creation
-- **Domain** user provisioning
-- **INFORM** system access
-- **UPG Navigator** and Goodman toolkit setup
-- **Dashlane** password management
-- **CDA Alarm** system access
-- **Salto's** electronic access control
-- **M365** license assignment
-- **Distribution groups** and **Vonage VBC** setup
-
-### Features:
-- ✅ **Interactive Checklists**: Check off completed items or mark as N/A
-- ✅ **Progress Tracking**: Visual progress indicators for each employee
-- ✅ **Category Organization**: Items grouped by system/category with expandable sections
-- ✅ **Status Management**: Automatic status updates (Pending → In Progress → Completed)
-- ✅ **Ticket Integration**: Link to existing IT tickets for tracking
-
-## Asset Module Configuration
-
-The Assets module provides a fully customizable table view with configurable columns stored in MariaDB. This feature allows you to customize which asset fields are displayed and their order according to your preferences.
-
-### Available Asset Fields
-
-1. **Name** - Asset name (default visible)
-2. **Host** - Hostname (default visible)
-3. **Last Logged In By** - Last logged-in user (default visible)
-4. **Platform** - Operating system/platform (default visible)
-5. **Status** - Asset status with color-coded chips (default visible)
-6. **Patch Status** - Current patch status (default visible)
-7. **Last Seen** - Last communication time (default visible)
-8. **Asset Class** - Asset classification (optional)
-9. **Client** - Associated client (optional)
-10. **Site** - Physical location/site (optional)
-11. **Serial Number** - Device serial number (optional)
-12. **Manufacturer** - Device manufacturer (optional)
-13. **Model** - Device model (optional)
-
-### Features:
-- ✅ **Dynamic Column Rendering**: Table columns render based on user preferences
-- ✅ **Persistent Storage**: Column configurations stored in MariaDB database
-- ✅ **Easy Configuration**: Click the gear icon to open configuration dialog
-- ✅ **Show/Hide Columns**: Check/uncheck boxes to toggle column visibility
-- ✅ **Column Reordering**: Use drag handles to reorder columns
-- ✅ **Reset to Defaults**: Restore original column configuration anytime
-- ✅ **Enhanced Search**: Search across all available asset fields
-- ✅ **JWT Secured**: All column configuration endpoints require authentication
-
-### Usage
-
-1. **Access Configuration**: Click the gear icon in the Assets module header
-2. **Toggle Visibility**: Check/uncheck boxes next to column names
-3. **Reorder Columns**: Use the drag handle icons to reorder columns up/down
-4. **Save Changes**: Click "Save" to apply your configuration
-5. **Reset Defaults**: Click "Reset to Defaults" to restore original settings
-
-### Search Functionality
-
-The search bar now searches across all 13 available asset fields, not just visible columns, making it easy to find assets regardless of your current column configuration.
-
-## User Management
-
-The dashboard includes a comprehensive multi-user authentication system with the following features:
-
-### Features:
-- ✅ **JWT Authentication**: Secure token-based authentication system
-- ✅ **User CRUD Operations**: Create, read, update, and delete users (admin only)
-- ✅ **Password Security**: Bcrypt password hashing with minimum 8-character requirement
-- ✅ **Role-Based Access**: Admin and standard user roles
-- ✅ **Session Management**: Automatic token expiration and refresh
-- ✅ **Protected Admin User**: Admin user cannot be deleted or have username changed
-
-### Admin Capabilities:
-1. **Create Users**: Add new users with username and password
-2. **Edit Users**: Update usernames and reset passwords
-3. **Delete Users**: Remove users (except admin and self)
-4. **View All Users**: See complete user list with creation timestamps
-
-### User-Specific Features:
-- **Custom Links**: Each user maintains their own set of custom links
-- **Column Preferences**: Personal asset column configuration per user
-- **Tab Layouts**: Individual dashboard tab arrangements and layouts
-
-## Dashboard Features
-
-### Alerts Module
-The Alerts module provides comprehensive alert monitoring with actionable controls:
-- ✅ **Severity Levels**: Critical, High, Medium, Low, Info with color-coded chips
-- ✅ **Alert Details**: Asset, policy, status, and timestamp information
-- ✅ **Resolve Functionality**: One-click alert resolution with confirmation
-- ✅ **Auto-Sorting**: Alerts sorted by creation time (newest first)
-- ✅ **Visual Indicators**: Border colors and icons based on severity
-- ✅ **External Links**: Direct links to alert details in SuperOps
-
-### Custom Links Module
-User-specific link management for quick access to frequently used resources:
-- ✅ **CRUD Operations**: Create, read, update, and delete custom links
-- ✅ **URL Validation**: Ensures valid URLs are entered
-- ✅ **User Isolation**: Each user has their own set of links
-- ✅ **Card Layout**: Clean, organized card-based display
-- ✅ **Quick Actions**: Edit, delete, and open links in new tabs
-
-### Uptime Tracking
-Weekly and Monthly uptime modules with advanced features:
-- ✅ **Drag-and-Drop Reordering**: Customize monitor display order
-- ✅ **Persistent Order**: Saved order preserved in browser localStorage
-- ✅ **Priority Sorting**: Automatic priority for WAN/AT&T monitors
-- ✅ **Visual Progress Bars**: Color-coded progress indicators (success/warning/error)
-- ✅ **Percentage Display**: Precise uptime percentages to 2 decimal places
-
-### Multi-Tab Dashboard
-Flexible dashboard organization with customizable tabs:
-- ✅ **Multiple Tabs**: Create unlimited dashboard tabs
-- ✅ **Tab Management**: Rename, reorder, and delete tabs
-- ✅ **Module Assignment**: Drag modules between tabs
-- ✅ **Responsive Grid**: Drag-and-drop, resizable widget layouts
-- ✅ **Layout Persistence**: Tab configurations saved per browser
-- ✅ **Module Display Names**: Customize module titles per user preference
-
-### SuperOps Integration
-Enhanced SuperOps integration beyond basic data display:
-- ✅ **Create Tickets**: Submit new tickets directly from dashboard
-- ✅ **Resolve Alerts**: Mark alerts as resolved via API
-- ✅ **Documentation Access**: Quick link to IT documentation portal
-- ✅ **Asset Search**: Search across all 13 asset fields
-- ✅ **Column Customization**: Configure which asset columns to display
-
-### Configurable Refresh
-Dashboard auto-refresh with user control:
-- ✅ **Adjustable Interval**: Set refresh interval from settings (default: 60 seconds)
-- ✅ **Live Countdown**: Visual countdown timer in header
-- ✅ **Auto-Retry**: Failed requests automatically retry after 10 seconds
-- ✅ **Cross-Tab Sync**: Refresh interval synced across browser tabs
+| # | Module | Data Source | Description |
+|---|--------|-------------|-------------|
+| 1 | Network Status | Uptime Kuma | Shows only down/alerting monitors |
+| 2 | Weekly Uptime | Uptime Kuma | 7-day uptime stats with drag-and-drop reordering |
+| 3 | Monthly Uptime | Uptime Kuma | 30-day uptime stats with drag-and-drop reordering |
+| 4 | Open Cases | SuperOps | Open tickets with ticket creation capability |
+| 5 | Alerts | SuperOps | Active alerts with severity filtering and resolve |
+| 6 | Assets | SuperOps | Asset inventory with customizable columns |
+| 7 | SuperOps Docs | SuperOps | Quick access to IT documentation portal |
+| 8 | Employee Setup | Internal DB | Kanban checklist for new hire onboarding |
+| 9 | Automation Logs | Custom API | Custom log endpoint for automation monitoring |
+| 10 | N8N Workflows | N8N | Recent workflow executions with status tracking |
+| 11 | Proxmox Status | Proxmox VE | VM/CT host info and resource monitoring |
+| 12 | Power BI KPI | Power BI | Embedded business intelligence reports |
+| 13 | Custom Links | Internal DB | Per-user customizable link management |
 
 ## Quick Start
 
-### Using Docker Compose (Recommended)
+### Docker Compose (Recommended)
 
-1. Clone the repository:
 ```bash
+# Clone and configure
 git clone https://github.com/jsstl177/JS-IT-DASHBOARD.git
 cd JS-IT-DASHBOARD
-```
+cp .env.example .env   # Edit .env with your configuration
 
-2. Create environment file:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-3. Build and run:
-```bash
+# Build and run
 docker-compose up --build
-```
 
-4. Access the dashboard at http://localhost:5000
+# Access at http://localhost:5000
+```
 
 ### Manual Installation
 
-1. Install dependencies:
 ```bash
+# Install dependencies
 cd server && npm install
 cd ../client && npm install
-```
 
-2. Configure environment:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
+# Configure environment
+cp .env.example .env   # Edit .env with your configuration
 
-3. Start the backend:
-```bash
+# Start backend (terminal 1)
 cd server && npm start
-```
 
-4. In another terminal, start the frontend:
-```bash
+# Start frontend (terminal 2)
 cd client && npm start
 ```
+
+### Default Credentials
+
+- **Username**: `admin`
+- **Password**: `admin123` (or value of `DEFAULT_ADMIN_PASSWORD` env var)
+
+After first login, change the admin password and create individual user accounts from User Management.
 
 ## Configuration
 
 ### Environment Variables
 
-- `PORT`: Server port (default: 5000)
-- `JWT_SECRET`: Secret key for JWT tokens (required for authentication)
-- `DEFAULT_ADMIN_PASSWORD`: Default admin password (default: admin123)
-- `NODE_ENV`: Environment mode (development/production)
-- `DB_HOST`: MariaDB host (default: mariadb)
-- `DB_USER`: MariaDB username
-- `DB_PASSWORD`: MariaDB password
-- `DB_NAME`: Database name (default: dashboard)
-
-### Authentication
-
-Default admin credentials:
-- **Username**: admin
-- **Password**: admin123 (or value of `DEFAULT_ADMIN_PASSWORD` environment variable)
-
-After first login, it's recommended to:
-1. Change the admin password from User Management settings
-2. Create individual user accounts for team members
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Server port | `5000` |
+| `NODE_ENV` | Environment mode | `production` |
+| `JWT_SECRET` | Secret key for JWT tokens | *required* |
+| `DEFAULT_ADMIN_PASSWORD` | Initial admin password | `admin123` |
+| `DB_HOST` | MariaDB hostname | `mariadb` |
+| `DB_PORT` | MariaDB port | `3306` |
+| `DB_USER` | MariaDB username | `dashboard` |
+| `DB_PASSWORD` | MariaDB password | *required* |
+| `DB_NAME` | Database name | `dashboard` |
+| `ENCRYPTION_KEY` | 64-char hex key for AES-256-GCM | *auto-generated* |
 
 ### Service Configuration
 
-Access the settings page to configure API endpoints and credentials for each service:
+Configure API endpoints and credentials from the Settings page:
 
-- **Uptime Kuma**: Base URL of your status page
-- **SuperOps**: Base URL and API key (supports ticket creation, alert resolution, assets, and documentation)
-- **Automation Log**: Base URL of log endpoint
-- **N8N**: Base URL and API key
-- **Proxmox**: Base URL, API token ID, and token secret
-- **Power BI**: Embed URL for reports
+- **Uptime Kuma** - Status page base URL
+- **SuperOps** - Base URL + API key (tickets, alerts, assets, docs)
+- **Automation Log** - Log endpoint base URL
+- **N8N** - Base URL + API key
+- **Proxmox** - Base URL + API token ID + token secret
+- **Power BI** - Embed URL for reports
+- **SMTP** - Email server for notifications
 
-**Note**: All service credentials are encrypted using AES-256-GCM before storage in the database.
+All service credentials are encrypted with AES-256-GCM before database storage.
 
 ## API Endpoints
 
-### Dashboard
-- `GET /api/dashboard/data` - Fetch all dashboard data
+### Authentication
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/settings/login` | Authenticate and receive JWT token |
 
-### Settings Management
-- `POST /api/settings/login` - Authenticate for settings access
-- `GET /api/settings` - Get current configurations (authenticated)
-- `POST /api/settings` - Save configuration (authenticated)
-- `DELETE /api/settings/:service` - Delete configuration (authenticated)
+### Dashboard Data
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/dashboard/data` | Fetch all dashboard data |
+| `POST` | `/api/dashboard/create-case` | Create SuperOps ticket |
+| `POST` | `/api/dashboard/resolve-alert` | Resolve SuperOps alert |
 
-### User Management
-- `GET /api/users` - Get all users (admin only, authenticated)
-- `POST /api/users` - Create new user (admin only, authenticated)
-- `PUT /api/users/:id` - Update user (admin only, authenticated)
-- `DELETE /api/users/:id` - Delete user (admin only, authenticated)
-- `POST /api/settings/login` - User authentication (returns JWT token)
+### Custom Links (authenticated)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/dashboard/custom-links` | Get user's custom links |
+| `POST` | `/api/dashboard/custom-links` | Create custom link |
+| `PUT` | `/api/dashboard/custom-links/:id` | Update custom link |
+| `DELETE` | `/api/dashboard/custom-links/:id` | Delete custom link |
 
-### Employee Setup Management
-- `GET /api/employee-setup` - Get all employee setup checklists
-- `POST /api/employee-setup` - Create new employee setup checklist
-- `GET /api/employee-setup/:id` - Get specific checklist with items
-- `PATCH /api/employee-setup/:checklistId/items/:itemId` - Update checklist item status
-- `PATCH /api/employee-setup/:id/status` - Update checklist status
-- `DELETE /api/employee-setup/:id` - Delete checklist
+### Settings (authenticated, admin)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/settings` | Get current configurations |
+| `POST` | `/api/settings` | Save configuration |
+| `DELETE` | `/api/settings/:service` | Delete configuration |
+| `POST` | `/api/settings/test-connection` | Test service connection |
 
-### Dashboard Operations
-- `POST /api/dashboard/create-case` - Create new SuperOps ticket
-- `POST /api/dashboard/resolve-alert` - Resolve a SuperOps alert
-- `GET /api/dashboard/custom-links` - Get user's custom links (authenticated)
-- `POST /api/dashboard/custom-links` - Create custom link (authenticated)
-- `PUT /api/dashboard/custom-links/:id` - Update custom link (authenticated)
-- `DELETE /api/dashboard/custom-links/:id` - Delete custom link (authenticated)
+### User Management (authenticated, admin)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/users` | List all users |
+| `POST` | `/api/users` | Create user |
+| `PUT` | `/api/users/:id` | Update user |
+| `DELETE` | `/api/users/:id` | Delete user |
 
-### Asset Column Configuration
-- `GET /api/asset-columns/columns` - Get column configuration for user (authenticated)
-- `POST /api/asset-columns/columns` - Save column configuration (authenticated)
-- `POST /api/asset-columns/columns/reset` - Reset column configuration to defaults (authenticated)
+### Employee Setup (authenticated)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/employee-setup` | List all checklists |
+| `POST` | `/api/employee-setup` | Create checklist |
+| `GET` | `/api/employee-setup/:id` | Get checklist with items |
+| `PATCH` | `/api/employee-setup/:checklistId/items/:itemId` | Update item status |
+| `PATCH` | `/api/employee-setup/:id/status` | Update checklist status |
+| `DELETE` | `/api/employee-setup/:id` | Delete checklist |
+
+### Asset Columns (authenticated)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/asset-columns/columns` | Get column configuration |
+| `POST` | `/api/asset-columns/columns` | Save column configuration |
+| `POST` | `/api/asset-columns/columns/reset` | Reset to defaults |
 
 ### System
-- `GET /health` - Health check endpoint
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check (Docker HEALTHCHECK) |
 
-## Code Quality & Documentation
-
-### Documentation
-- **JSDoc Comments**: All server-side code includes comprehensive JSDoc documentation
-  - Utility functions (`crypto.js`, `logger.js`, `dbHelpers.js`, `constants.js`)
-  - Service modules (SuperOps, Uptime Kuma, Proxmox, N8N, Power BI, Automation Log)
-  - Middleware (error handlers, validation)
-  - Clear parameter and return type documentation
-
-### Error Handling
-- **Global Error Handler**: Centralized error handling with proper HTTP status codes
-- **Async Handler Wrapper**: Catches errors in async route handlers
-- **Service-Level Error Handling**: Each service gracefully handles API failures
-- **Validation Middleware**: Input validation for all endpoints
-- **Timeout Protection**: API calls have configurable timeouts
-- **Graceful Degradation**: Dashboard continues to function even when services are unavailable
-
-### Testing
-- **Unit Tests**: Comprehensive test coverage for:
-  - All service modules (SuperOps, Uptime Kuma, Proxmox, N8N, etc.)
-  - Route handlers (dashboard, settings, employee setup, asset columns)
-  - Validation middleware
-  - Cryptographic utilities
-  - Database helpers
-- **Test Framework**: Jest with Supertest for API testing
-- **Run Tests**: `cd server && npm test`
-- **Coverage Report**: `cd server && npm run test:coverage`
-
-### Security Features
-- **AES-256-GCM Encryption**: Sensitive data encrypted at rest
-- **JWT Authentication**: Secure token-based authentication
-- **Input Sanitization**: All inputs validated and sanitized
-- **Parameterized Queries**: SQL injection prevention
-- **Rate Limiting**: API rate limiting to prevent abuse
-- **Security Headers**: Helmet.js for security headers
-- **Environment Variables**: Secrets managed via environment variables
-
-## Development
-
-### Project Structure
+## Project Structure
 
 ```
-├── server/                 # Backend Node.js/Express
-│   ├── routes/            # API routes
-│   ├── services/          # Data fetching services
-│   ├── db.js             # Database configuration
-│   └── server.js         # Main server file
-├── client/                # Frontend React app
+JS-IT-DASHBOARD/
+├── server/                          # Backend (Node.js / Express 5)
+│   ├── server.js                    # Application entry point
+│   ├── db.js                        # MariaDB pool, migrations, seeding
+│   ├── healthcheck.js               # Docker health check script
+│   ├── reset-admin-password.js      # Admin password reset utility
+│   ├── package.json
+│   ├── middleware/
+│   │   ├── errorHandler.js          # Global error handler, asyncHandler, 404
+│   │   └── validation.js            # Input validation middleware
+│   ├── routes/
+│   │   ├── dashboard.js             # Dashboard data, tickets, alerts, links
+│   │   ├── settings.js              # Auth, settings CRUD, connection testing
+│   │   ├── users.js                 # User CRUD (admin only)
+│   │   ├── employeeSetup.js         # Employee onboarding checklists
+│   │   └── assetColumns.js          # Asset column configuration
+│   ├── services/
+│   │   ├── superOps.js              # SuperOps GraphQL API integration
+│   │   ├── uptimeKuma.js            # Uptime Kuma status page scraper
+│   │   ├── proxmox.js               # Proxmox VE REST API integration
+│   │   ├── n8n.js                   # N8N workflow API integration
+│   │   ├── automationLog.js         # Custom automation log endpoint
+│   │   ├── powerBI.js               # Power BI embed URL provider
+│   │   └── connectionTester.js      # Service connectivity testing
+│   ├── utils/
+│   │   ├── crypto.js                # AES-256-GCM encrypt/decrypt
+│   │   ├── logger.js                # Structured file + console logger
+│   │   ├── dbHelpers.js             # dbGet, dbAll, dbRun wrappers
+│   │   ├── constants.js             # Application constants
+│   │   └── checklistData.js         # Employee setup checklist definitions
+│   └── tests/                       # Jest unit & integration tests
+│       ├── constants.test.js
+│       ├── crypto.test.js
+│       ├── dbHelpers.test.js
+│       ├── errorHandler.test.js
+│       ├── logger.test.js
+│       ├── users.test.js
+│       ├── settings.test.js
+│       ├── dashboard.test.js
+│       ├── assetColumns.test.js
+│       ├── connectionTester.test.js
+│       ├── validation.test.js
+│       ├── employeeSetup.test.js
+│       ├── employeeSetup401.test.js
+│       ├── employeeSetupAutoClose.test.js
+│       ├── employeeSetupClosedTicket.test.js
+│       └── services/
+│           ├── superOps.test.js
+│           ├── uptimeKuma.test.js
+│           ├── proxmox.test.js
+│           ├── n8n.test.js
+│           └── automationLog.test.js
+├── client/                          # Frontend (React 19 / MUI 7)
+│   ├── package.json
+│   ├── setupProxy.js               # Dev proxy to backend
 │   └── src/
-│       ├── components/    # React components
-│       └── App.js         # Main React app
-├── Dockerfile            # Docker configuration
-├── docker-compose.yml    # Docker Compose setup
-└── README.md            # This file
+│       ├── App.js                   # Main app with auth, tabs, grid layout
+│       ├── App.test.js
+│       ├── themes.js                # MUI theme definitions (5 themes)
+│       ├── hooks/
+│       │   ├── useDashboardTabs.js  # Tab state management hook
+│       │   └── useSettingsLayout.js # Settings layout hook
+│       └── components/
+│           ├── Login.js             # JWT authentication form
+│           ├── TabBar.js            # Dashboard tab navigation
+│           ├── NetworkStatus.js     # Uptime Kuma down monitors
+│           ├── WeeklyUptime.js      # 7-day uptime with reordering
+│           ├── MonthlyUptime.js     # 30-day uptime with reordering
+│           ├── OpenTickets.js       # SuperOps tickets + creation
+│           ├── Alerts.js            # SuperOps alerts + resolve
+│           ├── Assets.js            # SuperOps assets + column config
+│           ├── SuperOpsDoc.js       # Documentation portal link
+│           ├── EmployeeSetup.js     # Kanban onboarding checklists
+│           ├── AutomationLogs.js    # Automation log viewer
+│           ├── N8NExecutions.js     # N8N workflow history
+│           ├── ProxmoxStatus.js     # Proxmox VM/CT monitoring
+│           ├── PowerBI.js           # Embedded Power BI reports
+│           ├── CustomLinks.js       # Per-user link management
+│           ├── Settings.js          # Service configuration panel
+│           ├── UserManagement.js    # User CRUD (admin)
+│           ├── ThemeSelector.js     # Theme picker
+│           ├── ErrorBoundary.js     # React error boundary
+│           └── __tests__/           # Component tests
+│               ├── Login.test.js
+│               ├── NetworkStatus.test.js
+│               ├── OpenTickets.test.js
+│               └── Settings.test.js
+├── Dockerfile                       # Development Docker image
+├── Dockerfile.prod                  # Production multi-stage image
+├── docker-compose.yml               # Full stack orchestration
+├── .env.example                     # Environment variable template
+└── README.md
 ```
 
-### Code Organization
+## Testing
 
-**Server Architecture:**
-- `routes/` - Express route handlers with authentication
-- `services/` - External API integration modules
-- `middleware/` - Express middleware (error handling, validation)
-- `utils/` - Utility functions (crypto, logging, database, constants)
-- `tests/` - Jest unit and integration tests
+### Run Backend Tests
 
-**Key Patterns:**
-- **Async/Await**: All async operations use async/await with proper error handling
-- **Promise.allSettled**: Dashboard data fetching uses Promise.allSettled for fault tolerance
-- **Connection Pooling**: MySQL connection pool for efficient database access
-- **Logging**: Structured logging with Winston-style logger
-- **Configuration**: Database-backed configuration with encryption
+```bash
+cd server
+npm test                    # Run all tests
+npm run test:coverage       # Run with coverage report
+npx jest tests/crypto.test.js --no-coverage   # Run a single test file
+```
 
-### Adding New Services
+### Test Coverage
 
-1. Create a service file in `server/services/`
-2. Add the service to the dashboard route in `server/routes/dashboard.js`
-3. Create a React component in `client/src/components/`
-4. Add the component to the App.js grid layout
+The backend includes 20 test files with 46+ unit and integration tests covering:
+
+- **Utilities** - crypto, logger, dbHelpers, constants
+- **Middleware** - errorHandler, validation
+- **Routes** - settings, dashboard, users, employeeSetup, assetColumns
+- **Services** - superOps, uptimeKuma, proxmox, n8n, automationLog, connectionTester
+
+### Run Frontend Tests
+
+```bash
+cd client
+npm test                    # Run in watch mode
+CI=true npm test            # Run once (CI mode)
+```
 
 ## Security
 
-- **AES-256-GCM Encryption**: All API credentials encrypted at rest in MariaDB
-- **JWT Authentication**: Secure token-based user authentication
-- **Bcrypt Password Hashing**: User passwords hashed with bcrypt (10 rounds)
-- **Role-Based Access Control**: Admin-only endpoints for user and settings management
-- **User Data Isolation**: Custom links and preferences isolated per user
-- **Input Validation**: Comprehensive validation and sanitization on all endpoints
-- **SQL Injection Prevention**: Parameterized queries throughout application
-- **Rate Limiting**: API rate limiting to prevent abuse
-- **Security Headers**: Helmet.js configured for security headers
-- **Session Management**: JWT tokens with expiration and automatic refresh
-- **Protected Admin**: Admin user cannot be deleted or have username changed
-- **HTTPS Recommended**: Use HTTPS for production deployment
+| Feature | Implementation |
+|---------|---------------|
+| Encryption at Rest | AES-256-GCM for all stored credentials |
+| Password Hashing | bcryptjs with 10 salt rounds |
+| Authentication | JWT tokens with configurable expiration |
+| Authorization | Role-based access control (admin/standard) |
+| Input Validation | express-validator + custom sanitization |
+| SQL Injection | Parameterized queries (mysql2 prepared statements) |
+| Rate Limiting | express-rate-limit on all API endpoints |
+| Security Headers | Helmet.js (CSP, HSTS, X-Frame-Options, etc.) |
+| CORS | Configurable origin whitelist |
+| Protected Admin | Admin account cannot be deleted or renamed |
+| User Isolation | Custom links, column prefs, tabs per user |
+| Graceful Shutdown | SIGTERM/SIGINT handlers close DB pool cleanly |
+
+## Docker Deployment
+
+### Development
+
+```bash
+docker-compose up --build
+```
+
+### Production
+
+```bash
+docker-compose -f docker-compose.yml up --build -d
+```
+
+The production Dockerfile (`Dockerfile.prod`) includes:
+- Multi-stage build (build React, then serve from Express)
+- `npm ci` for deterministic installs
+- Non-root user (`node`)
+- `dumb-init` for proper signal handling
+- Health check endpoint at `/health`
+- Minimized image size with cache cleanup
+
+### Container Architecture
+
+```
+┌──────────────────────────┐     ┌──────────────────────┐
+│  dashboard (Node.js)     │     │  mariadb (10.11)     │
+│  Port 5000               │────>│  Port 3306           │
+│  Express + React build   │     │  Persistent volume   │
+│  Health: /health         │     │                      │
+└──────────────────────────┘     └──────────────────────┘
+```
 
 ## Troubleshooting
 
-### Common Issues
+| Issue | Solution |
+|-------|----------|
+| Database connection errors | Verify MariaDB container is running and credentials match `.env` |
+| API connection failures | Check service URLs and credentials in Settings page |
+| Authentication issues | Ensure `JWT_SECRET` is set; try clearing browser localStorage |
+| Session expired | Token expired; logout and login again |
+| Build failures | Ensure Node.js >= 18; run `npm ci` to clean install |
+| Container won't start | Check `docker-compose logs -f dashboard` for errors |
+| Admin password reset | Run `node server/reset-admin-password.js` inside the container |
 
-1. **Database errors**: Ensure MariaDB container is running and accessible
-2. **API connection failures**: Check network connectivity and API credentials in Settings
-3. **Build failures**: Ensure all dependencies are installed and Node.js version is compatible
-4. **Authentication issues**: Verify JWT_SECRET environment variable is set
-5. **Column configuration not saving**: Verify JWT authentication is working and check server logs
-6. **Session expired errors**: Token may have expired; logout and login again
-7. **Custom links not saving**: Ensure user is authenticated and check browser console for errors
+### Viewing Logs
 
-### Logs
-
-Check Docker logs:
 ```bash
+# Docker logs
 docker-compose logs -f dashboard
+
+# Application logs (inside container)
+ls /app/logs/
 ```
 
-Or application logs in the container console.
+## Development
+
+### Adding a New Service Module
+
+1. Create service file in `server/services/yourService.js`
+2. Add data fetcher call in `server/routes/dashboard.js`
+3. Create React component in `client/src/components/YourModule.js`
+4. Register component in `client/src/App.js` module map
+5. Add tests in `server/tests/services/yourService.test.js`
+
+### Key Patterns
+
+- **Async/Await** with `asyncHandler` wrapper for route error catching
+- **Promise.allSettled** for parallel, fault-tolerant data fetching
+- **Connection Pooling** via mysql2 for efficient database access
+- **Structured Logging** with file-level JSDoc and timestamped console + file output
+- **Database Migrations** run automatically on startup via `db.js`
 
 ## License
 
@@ -425,6 +404,6 @@ ISC License
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
+3. Make your changes with tests
+4. Run `npm test` in both `server/` and `client/`
 5. Submit a pull request

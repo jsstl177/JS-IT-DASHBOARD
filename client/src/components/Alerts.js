@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Alerts component for SuperOps alert monitoring.
+ * Displays active alerts with severity-based color coding and
+ * one-click resolve functionality via the SuperOps API.
+ */
+
 import React, { useState } from 'react';
 import {
   Card, CardContent, Typography, List, ListItem, ListItemText,

@@ -1,8 +1,8 @@
 {
-  "name": "server",
+  "name": "js-it-dashboard-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Express backend for the JS IT Dashboard - aggregates IT monitoring data from multiple sources",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
@@ -10,8 +10,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["dashboard", "it-monitoring", "express", "superops", "uptime-kuma", "proxmox"],
+  "author": "Johnstone Supply - The Wines Group",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
@@ -46,5 +46,8 @@
         "statements": 50
       }
     }
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

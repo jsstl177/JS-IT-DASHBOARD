@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Theme toggle button component.
+ * Switches between light and dark themes with a single click.
+ */
+
 import React from 'react';
 import { IconButton, Tooltip } from '@mui/material';
 import LightModeIcon from '@mui/icons-material/LightMode';

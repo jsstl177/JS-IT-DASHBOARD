@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Login screen component.
+ * Handles user authentication via JWT tokens. Supports password manager
+ * auto-fill by reading input values directly from refs on submit.
+ */
+
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, Typography, TextField, Button, Alert } from '@mui/material';
 import axios from 'axios';

@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Proxmox VE cluster status component.
+ * Provides a link to the Proxmox management interface for monitoring
+ * virtualization hosts, VMs, and containers.
+ */
+
 import React from 'react';
 import { Card, CardContent, Typography, Button, Box } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';

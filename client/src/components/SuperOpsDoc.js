@@ -1,3 +1,9 @@
+/**
+ * @fileoverview SuperOps IT documentation quick-access component.
+ * Provides a button to open the SuperOps password and documentation
+ * portal in a new browser tab.
+ */
+
 import React from 'react';
 import { Card, CardContent, Typography, Button, Box } from '@mui/material';
 import { OpenInNew, Description } from '@mui/icons-material';
